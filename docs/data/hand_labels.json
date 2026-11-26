@@ -1,0 +1,300 @@
+{
+  "warning": "These are hand labels on one stratified case per pattern, made by reading the documents against POLICY.md. They are not the hackathon answer key. Dev cases have no official labels. Do not treat the score below as the official unseen score.",
+  "labels": [
+    {
+      "institution": "bank",
+      "case_id": "BK-CS120130",
+      "verdict": "CLOSE",
+      "reason_code": "BUSINESS_RECORDS_RECONCILE",
+      "note": "Parking cash deposits match the collection reports.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "BUSINESS_RECORDS_RECONCILE",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS125960",
+      "verdict": "ESCALATE",
+      "reason_code": "ESC_STRUCTURING",
+      "note": "Staff note records questions about staying under the cash threshold.",
+      "engine_verdict": "ESCALATE",
+      "engine_reason_code": "ESC_STRUCTURING",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS144992",
+      "verdict": "CLOSE",
+      "reason_code": "LIST_MATCH_DIFFERENT_PARTY",
+      "note": "Address-only list match; register shows a different company and officer.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "LIST_MATCH_DIFFERENT_PARTY",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS103088",
+      "verdict": "RFI",
+      "reason_code": "RFI_COUNTERPARTY_DETAILS",
+      "note": "Name-only list match and no document settles identity.",
+      "engine_verdict": "RFI",
+      "engine_reason_code": "RFI_COUNTERPARTY_DETAILS",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS125943",
+      "verdict": "ESCALATE",
+      "reason_code": "ESC_LISTED_PARTY",
+      "note": "Listed officer still controlled the company on the payment date.",
+      "engine_verdict": "ESCALATE",
+      "engine_reason_code": "ESC_LISTED_PARTY",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS150683",
+      "verdict": "CLOSE",
+      "reason_code": "INVOICE_MATCHES",
+      "note": "Hospital invoice matches the higher-risk payment.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "INVOICE_MATCHES",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS106928",
+      "verdict": "CLOSE",
+      "reason_code": "DOCUMENTED_EVENT",
+      "note": "Solicitor letter documents an inheritance matching the inflow.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "DOCUMENTED_EVENT",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS100551",
+      "verdict": "CLOSE",
+      "reason_code": "DOCUMENTED_EVENT",
+      "note": "Vehicle sale receipt matches the cash.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "DOCUMENTED_EVENT",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS121271",
+      "verdict": "CLOSE",
+      "reason_code": "COLLECTION_DOCUMENTED",
+      "note": "Booking names the people who paid.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "COLLECTION_DOCUMENTED",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS106820",
+      "verdict": "ESCALATE",
+      "reason_code": "ESC_MULE_ACTIVITY",
+      "note": "Sending bank reports an authorised push-payment scam.",
+      "engine_verdict": "ESCALATE",
+      "engine_reason_code": "ESC_MULE_ACTIVITY",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS106845",
+      "verdict": "ESCALATE",
+      "reason_code": "ESC_MULE_ACTIVITY",
+      "note": "Many payers and rapid payout with no collection record.",
+      "engine_verdict": "ESCALATE",
+      "engine_reason_code": "ESC_MULE_ACTIVITY",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS109535",
+      "verdict": "ESCALATE",
+      "reason_code": "ESC_HIGH_RISK_CORRIDOR",
+      "note": "Higher-risk payments with only an unsupported chat explanation.",
+      "engine_verdict": "ESCALATE",
+      "engine_reason_code": "ESC_HIGH_RISK_CORRIDOR",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS165634",
+      "verdict": "RFI",
+      "reason_code": "RFI_SOURCE_OF_FUNDS",
+      "note": "Profile breach with no source document and no suspicion flag.",
+      "engine_verdict": "RFI",
+      "engine_reason_code": "RFI_SOURCE_OF_FUNDS",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS111043",
+      "verdict": "RFI",
+      "reason_code": "RFI_UPDATED_PROFILE",
+      "note": "Own-account transfer at or above five times declared income.",
+      "engine_verdict": "RFI",
+      "engine_reason_code": "RFI_UPDATED_PROFILE",
+      "engine_agrees": true
+    },
+    {
+      "institution": "bank",
+      "case_id": "BK-CS370583",
+      "verdict": "CLOSE",
+      "reason_code": "REFUND_OF_EARLIER_PAYMENT",
+      "note": "Venue email is a refund matching the higher-risk receipt.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "REFUND_OF_EARLIER_PAYMENT",
+      "engine_agrees": true
+    },
+    {
+      "institution": "emoney",
+      "case_id": "EM-CS118938",
+      "verdict": "CLOSE",
+      "reason_code": "BUSINESS_RECORDS_RECONCILE",
+      "note": "Takings book reconciles to the cash top-ups.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "BUSINESS_RECORDS_RECONCILE",
+      "engine_agrees": true
+    },
+    {
+      "institution": "emoney",
+      "case_id": "EM-CS105573",
+      "verdict": "ESCALATE",
+      "reason_code": "ESC_ACCOUNT_MISUSE",
+      "note": "One device logged into several customer accounts.",
+      "engine_verdict": "ESCALATE",
+      "engine_reason_code": "ESC_ACCOUNT_MISUSE",
+      "engine_agrees": true
+    },
+    {
+      "institution": "emoney",
+      "case_id": "EM-CS137799",
+      "verdict": "CLOSE",
+      "reason_code": "REFUND_OF_EARLIER_PAYMENT",
+      "note": "Deposit return and new holding deposit are both documented.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "REFUND_OF_EARLIER_PAYMENT",
+      "engine_agrees": true
+    },
+    {
+      "institution": "payments_fx",
+      "case_id": "PX-CS121073",
+      "verdict": "CLOSE",
+      "reason_code": "INVOICE_MATCHES",
+      "note": "Each sub-threshold payment matches a contract stage.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "INVOICE_MATCHES",
+      "engine_agrees": true
+    },
+    {
+      "institution": "payments_fx",
+      "case_id": "PX-CS102578",
+      "verdict": "ESCALATE",
+      "reason_code": "ESC_STRUCTURING",
+      "note": "Customer asked about splitting payments to avoid the invoice threshold.",
+      "engine_verdict": "ESCALATE",
+      "engine_reason_code": "ESC_STRUCTURING",
+      "engine_agrees": true
+    },
+    {
+      "institution": "payments_fx",
+      "case_id": "PX-CS118701",
+      "verdict": "CLOSE",
+      "reason_code": "INVOICE_MATCHES",
+      "note": "Supply contract and invoice match the higher-risk payment.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "INVOICE_MATCHES",
+      "engine_agrees": true
+    },
+    {
+      "institution": "payments_fx",
+      "case_id": "PX-CS158289",
+      "verdict": "CLOSE",
+      "reason_code": "GROUP_COMPANY",
+      "note": "Group chart shows the funder owns the client.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "GROUP_COMPANY",
+      "engine_agrees": true
+    },
+    {
+      "institution": "payments_fx",
+      "case_id": "PX-CS101540",
+      "verdict": "CLOSE",
+      "reason_code": "THIRD_PARTY_DOCUMENTED",
+      "note": "Factoring agreement and remittance document the funder.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "THIRD_PARTY_DOCUMENTED",
+      "engine_agrees": true
+    },
+    {
+      "institution": "payments_fx",
+      "case_id": "PX-CS114166",
+      "verdict": "ESCALATE",
+      "reason_code": "ESC_INVOICE_MISMATCH",
+      "note": "Invoices do not support the explanation; staff note says the customer would not explain the corridor.",
+      "engine_verdict": "ESCALATE",
+      "engine_reason_code": "ESC_INVOICE_MISMATCH",
+      "engine_agrees": true
+    },
+    {
+      "institution": "investment",
+      "case_id": "IV-CS134100",
+      "verdict": "CLOSE",
+      "reason_code": "DOCUMENTED_EVENT",
+      "note": "Redundancy letter explains the early sale.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "DOCUMENTED_EVENT",
+      "engine_agrees": true
+    },
+    {
+      "institution": "investment",
+      "case_id": "IV-CS210761",
+      "verdict": "ESCALATE",
+      "reason_code": "ESC_EARLY_REDEMPTION",
+      "note": "Units sold within 90 days with no documented reason.",
+      "engine_verdict": "ESCALATE",
+      "engine_reason_code": "ESC_EARLY_REDEMPTION",
+      "engine_agrees": true
+    },
+    {
+      "institution": "investment",
+      "case_id": "IV-CS100692",
+      "verdict": "CLOSE",
+      "reason_code": "DOCUMENTED_EVENT",
+      "note": "Completion statement matches the sale proceeds paid in.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "DOCUMENTED_EVENT",
+      "engine_agrees": true
+    },
+    {
+      "institution": "investment",
+      "case_id": "IV-CS112234",
+      "verdict": "CLOSE",
+      "reason_code": "REFUND_OF_EARLIER_PAYMENT",
+      "note": "ISA cancellation returns the subscription.",
+      "engine_verdict": "CLOSE",
+      "engine_reason_code": "REFUND_OF_EARLIER_PAYMENT",
+      "engine_agrees": true
+    }
+  ],
+  "score": {
+    "cases": 28,
+    "cost": 0,
+    "escalate_all_cost": 54,
+    "verdict_points": 100.0,
+    "wrongful_closes": 0
+  },
+  "verdict_accuracy": 1.0,
+  "reason_accuracy": 1.0,
+  "split": {
+    "method": "Even and odd positions in this stratified list. The engine was not fitted to these labels.",
+    "even_points": 100.0,
+    "odd_points": 100.0,
+    "gap": 0.0
+  }
+}

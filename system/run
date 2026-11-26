@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Official entry point. Called as: system/run <institution folder> <output file>
+# Paths may be relative to the caller's working directory. The engine reads
+# only that folder and writes only the output file.
+set -euo pipefail
+if [[ $# -ne 2 ]]; then
+  echo "usage: system/run <institution folder> <output file>" >&2
+  exit 2
+fi
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CASES="$1"
+OUT="$2"
+if [[ "$CASES" != /* ]]; then
+  CASES="$(pwd)/$CASES"
+fi
+if [[ "$OUT" != /* ]]; then
+  OUT="$(pwd)/$OUT"
+fi
+export PYTHONPATH="${ROOT}${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 -m triage --cases "$CASES" --out "$OUT"

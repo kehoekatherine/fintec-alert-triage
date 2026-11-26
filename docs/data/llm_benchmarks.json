@@ -1,0 +1,64 @@
+{
+  "checked": "2026-11-26",
+  "currency_note": "Token prices are US dollars from the provider pages below. The dashboard converts to GBP only through an editable rate, which is an assumption, not a live FX quote.",
+  "output_tokens_default": 400,
+  "output_tokens_default_note": "Assumption, not a measured model response. The rules engine's own reasons are about 90 tokens. 400 allows a short JSON verdict with a two-to-four sentence reason. Change it on the dashboard or replace measured blocks below.",
+  "models": [
+    {
+      "id": "gpt-4o",
+      "label": "GPT-4o",
+      "provider": "OpenAI",
+      "kind": "GPT-4o class",
+      "input_usd_per_mtok": 2.5,
+      "output_usd_per_mtok": 10.0,
+      "source": "https://developers.openai.com/api/docs/pricing",
+      "source_note": "Standard tier on OpenAI's pricing page, checked 26 Nov 2026. The model page also lists GPT-4o as deprecated; the price list still publishes $2.50 input and $10 output per 1M tokens.",
+      "published_output_tokens_per_sec": null,
+      "assumed_output_tokens_per_sec": 40,
+      "speed_note": "OpenAI's pricing page does not publish a tokens-per-second figure. 40 is an editable assumption, not a measurement.",
+      "measured": null
+    },
+    {
+      "id": "claude-sonnet-5-5",
+      "label": "Claude Sonnet 5.5",
+      "provider": "Anthropic",
+      "kind": "Claude Sonnet class",
+      "input_usd_per_mtok": 2.0,
+      "output_usd_per_mtok": 10.0,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "source_note": "Claude API standard global list price, checked 26 Nov 2026. Anthropic's rate card dated 9 Nov 2026 shows the same $2 input and $10 output per 1M tokens.",
+      "published_output_tokens_per_sec": null,
+      "assumed_output_tokens_per_sec": 50,
+      "speed_note": "The pricing page calls the model fast but does not publish tokens per second. 50 is an editable assumption, not a measurement.",
+      "measured": null
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "label": "Gemini 3.8 Flash",
+      "provider": "Google",
+      "kind": "Gemini Flash class",
+      "input_usd_per_mtok": 0.75,
+      "output_usd_per_mtok": 3.75,
+      "source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "source_note": "Paid standard tier, checked 26 Nov 2026. Google lists $0.75 input and $3.75 output per 1M tokens through 31 Dec 2026, then $1.50 and $7.50. Output price includes thinking tokens.",
+      "published_output_tokens_per_sec": null,
+      "assumed_output_tokens_per_sec": 80,
+      "speed_note": "No tokens-per-second figure is on the pricing page. 80 is an editable assumption, not a measurement.",
+      "measured": null
+    },
+    {
+      "id": "llama-3.3-70b-groq",
+      "label": "Llama 3.3 70B",
+      "provider": "Groq (hosted open weights)",
+      "kind": "Llama class",
+      "input_usd_per_mtok": 0.59,
+      "output_usd_per_mtok": 0.79,
+      "source": "https://home.cloud.groq.io/pricing",
+      "source_note": "Groq on-demand price list for Llama 3.3 70B Versatile, checked 26 Nov 2026: $0.59 input and $0.79 output per 1M tokens, listed speed 394 tokens per second. This is hosted inference, not a self-hosted GPU cost. Groq's model docs also show an enterprise SKU as contact-sales; the figure used here is the public on-demand list price.",
+      "published_output_tokens_per_sec": 394,
+      "assumed_output_tokens_per_sec": 394,
+      "speed_note": "394 tokens/sec is Groq's published on-demand speed for this model, checked 26 Nov 2026. Generation time below uses that figure. It is not a latency measured on these cases.",
+      "measured": null
+    }
+  ]
+}

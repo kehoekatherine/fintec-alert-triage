@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Model cost · Alert triage</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="toolbar">
+    <a class="tool" href="index.html">Queue</a>
+    <strong>Model cost</strong>
+    <span class="spacer"></span>
+    <div class="segmented" role="group" aria-label="Appearance">
+      <button type="button" data-theme="system" aria-pressed="true">Auto</button>
+      <button type="button" data-theme="light">Light</button>
+      <button type="button" data-theme="dark">Dark</button>
+    </div>
+  </header>
+  <main id="main" class="page">
+    <p class="muted" style="margin:0">Rules engine as the baseline. Language models are a cost, not a measured accuracy claim.</p>
+    <h1>What it costs to triage with a model</h1>
+    <p class="muted">Prices were read from provider pages on 26 Nov 2026. Token counts are estimated from the 4,000 development cases (characters ÷ 4). No model was called, so accuracy cells stay empty until you drop measurements into <span class="code">docs/data/llm_benchmarks.json</span>.</p>
+
+    <section class="card" style="padding:16px 18px;margin:18px 0">
+      <h2 style="margin-top:0;font-size:20px">Definitions</h2>
+      <div class="row"><span>Baseline</span><div>The deterministic rules engine in <span class="code">triage/engine.py</span>. It does not call a model. Every comparison below is against that system.</div></div>
+      <div class="row"><span>Fitness</span><div>The brief’s cost-matrix score out of 100: the share of the cost of escalating every case that the system avoids. A wrongful close costs 10, missing a close costs 3, an RFI on a true escalation costs 3. Escalating everything scores 0.</div></div>
+      <div class="row"><span>Accuracy</span><div>Share of cases with the right verdict, and share with the right reason code. On this page the denominator is a hand-labelled stratified sample, not the official answer key.</div></div>
+      <div class="row"><span>Unsafe clearance</span><div>Wrongful CLOSE rate: cases labelled RFI or ESCALATE that the system closed. That is the cost-10 error.</div></div>
+      <div class="row"><span>Overfitting</span><div>Absolute gap in fitness between the even and odd halves of the hand-labelled sample. The engine was not trained on those labels. A gap of 0 here is not an unseen-test score.</div></div>
+      <div class="row"><span>Cost</span><div>Model list price × estimated tokens. The rules engine’s marginal token cost is zero.</div></div>
+      <div class="row"><span>Workload</span><div>Analyst minutes avoided when a case is closed by the system. RFIs and escalations are assumed to stay with a person. Minutes and the hourly rate are sliders.</div></div>
+      <div class="row"><span>Customer value</span><div>Analyst pounds saved, closes that were not sent back as an RFI, and held payments the rules engine released. Held-payment value per payment is a slider because the dataset has no customer-loss figure.</div></div>
+    </section>
+
+    <h2>Rules baseline on the hand-labelled sample</h2>
+    <p class="footnote" id="label-warning"></p>
+    <div class="stats" id="baseline-stats"></div>
+
+    <h2>Assumptions you can change</h2>
+    <div class="controls" id="controls"></div>
+
+    <h2>Four models, same case payload</h2>
+    <div class="table-wrap">
+      <table id="model-table">
+        <thead>
+          <tr>
+            <th>Model</th><th>USD / 1M in</th><th>USD / 1M out</th>
+            <th>Per case</th><th>Per 1,000</th><th>Per 800-case test</th><th>Per month</th>
+            <th>Latency / case</th><th>200 cases vs 30 min</th>
+            <th>Measured accuracy</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="grid" style="margin-top:16px">
+      <div class="chart" id="cost-chart"></div>
+      <div class="chart" id="time-chart"></div>
+    </div>
+
+    <h2>Tradeoffs</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>Rules baseline</th><th>GPT-4o</th><th>Claude Sonnet 5.5</th><th>Gemini 3.8 Flash</th><th>Llama 3.3 70B on Groq</th></tr></thead>
+        <tbody>
+          <tr><td>Accuracy on these cases</td><td>Matches the hand labels below. Not an official key.</td><td colspan="4">Not measured. Do not read a blank cell as a score.</td></tr>
+          <tr><td>Determinism</td><td>Five runs on the bank folder were byte-identical.</td><td colspan="4">Needs temperature 0 and a cache. Still not guaranteed across provider updates.</td></tr>
+          <tr><td>Data privacy</td><td>The case folder never leaves the process.</td><td colspan="3">Case text, names and amounts are sent to the provider.</td><td>Sent to Groq unless you self-host. Self-hosted GPU cost is not in the price above.</td></tr>
+          <tr><td>Rate limits</td><td>None beyond local CPU.</td><td colspan="4">Provider quotas. A 200-case run can stall even when the arithmetic time is under 30 minutes.</td></tr>
+          <tr><td>Wrongful close</td><td>The rules refuse to close once a suspicion finding exists.</td><td colspan="4">A model can close a case the rules would escalate. The optional LLM hook refuses that downgrade; it is off by default.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Sources</h2>
+    <ol class="footnote" id="sources"></ol>
+  </main>
+  <script src="dashboard.js"></script>
+</body>
+</html>

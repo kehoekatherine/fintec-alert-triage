@@ -1,0 +1,58 @@
+{
+  "method": "Characters in the customer, alerts, review-window transactions and evidence markdown, divided by 4. This is an estimate of tokens, not a tokenizer count.",
+  "institutions": {
+    "bank": {
+      "cases": 1000,
+      "chars_mean": 11322,
+      "chars_p50": 11143,
+      "chars_p90": 15451,
+      "reason_chars_mean": 365,
+      "input_tokens_mean_est": 2830,
+      "input_tokens_p90_est": 3863,
+      "output_tokens_rules_est": 91,
+      "load_seconds": 0.394,
+      "triage_seconds": 0.307
+    },
+    "emoney": {
+      "cases": 1000,
+      "chars_mean": 10625,
+      "chars_p50": 10506,
+      "chars_p90": 14847,
+      "reason_chars_mean": 348,
+      "input_tokens_mean_est": 2656,
+      "input_tokens_p90_est": 3712,
+      "output_tokens_rules_est": 87,
+      "load_seconds": 0.37,
+      "triage_seconds": 0.299
+    },
+    "investment": {
+      "cases": 1000,
+      "chars_mean": 4671,
+      "chars_p50": 4606,
+      "chars_p90": 5928,
+      "reason_chars_mean": 323,
+      "input_tokens_mean_est": 1168,
+      "input_tokens_p90_est": 1482,
+      "output_tokens_rules_est": 81,
+      "load_seconds": 0.135,
+      "triage_seconds": 0.201
+    },
+    "payments_fx": {
+      "cases": 1000,
+      "chars_mean": 9620,
+      "chars_p50": 8706,
+      "chars_p90": 11428,
+      "reason_chars_mean": 368,
+      "input_tokens_mean_est": 2405,
+      "input_tokens_p90_est": 2857,
+      "output_tokens_rules_est": 92,
+      "load_seconds": 0.382,
+      "triage_seconds": 0.376
+    }
+  },
+  "held_payments": 489,
+  "held_payments_closed": 127,
+  "input_tokens_mean_est": 2265,
+  "output_tokens_rules_est": 88,
+  "triage_seconds_per_case": 0.000296
+}
