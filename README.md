@@ -1,6 +1,8 @@
-# Alert triage
+# ClearPath AML
 
-A deterministic system that reads a folder of UK transaction-monitoring alerts and writes one verdict for every case: **CLOSE**, **RFI** or **ESCALATE**, with a reason code, a reason that names the case's own facts, and the document, transaction or list ids it relied on.
+**Alert Triage Assistant.** Reviews transaction-monitoring alerts against each firm's policy and decides, consistently and with cited evidence, whether to close, request information or escalate to the MLRO. Built for AML analysts and compliance teams at banks, payment and FX firms, e-money providers and investment platforms.
+
+It reads a folder of UK transaction-monitoring alerts and writes one verdict for every case: **CLOSE**, **RFI** or **ESCALATE**, with a reason code, a reason that names the case's own facts, and the document, transaction or list ids it relied on. The repository name stays `fintec-alert-triage`.
 
 The development data for the [TM hackathon](https://hosted-pages.godiligent.ai/hackathon-tm-track/) is in `institutions/`. `BRIEF.html` is the brief. Amounts are in pounds.
 

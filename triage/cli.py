@@ -43,7 +43,10 @@ def distribution(decisions: list[dict]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="triage", description="Triage transaction-monitoring alert cases.")
+    parser = argparse.ArgumentParser(
+        prog="triage",
+        description="ClearPath AML, the Alert Triage Assistant. Reviews transaction-monitoring alerts against the firm's policy and writes CLOSE, RFI or ESCALATE with cited evidence.",
+    )
     parser.add_argument("--cases", required=True, help="Institution folder containing cases.jsonl")
     parser.add_argument("--out", required=True, help="Output JSONL path")
     parser.add_argument("--stats", action="store_true", help="Print verdict counts to stderr")

@@ -99,9 +99,14 @@ button { cursor: pointer; }
   border-right: 0.5px solid var(--separator);
   padding: 18px 12px 12px;
 }
-.brand { display: flex; gap: 10px; align-items: center; padding: 4px 8px 14px; }
-.brand h1 { font-size: 34px; margin: 0; font-weight: 800; letter-spacing: -0.035em; line-height: 1.05; }
-.brand p { margin: 4px 0 0; color: var(--secondary); font-size: 13px; font-weight: 500; }
+.brand { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 2px 8px 14px; }
+.brand h1 { font-size: 34px; margin: 6px 0 0; font-weight: 800; letter-spacing: -0.04em; line-height: 1.02; white-space: nowrap; }
+.brand-role { margin: 2px 0 0; color: var(--text); font-size: 15px; font-weight: 650; letter-spacing: -0.015em; line-height: 1.2; }
+.brand-blurb { margin: 6px 0 0; color: var(--secondary); font-size: 13px; font-weight: 500; line-height: 1.35; }
+.about { margin: 0 0 22px; max-width: 760px; }
+.about h2 { margin: 0 0 6px; font-size: 28px; font-weight: 760; letter-spacing: -0.03em; }
+.about .brand-role { margin: 0 0 10px; }
+.about p:last-child { margin: 0; font-size: 17px; line-height: 1.45; }
 .mark {
   width: 40px; height: 40px; border-radius: 10px; background: var(--blue); color: white;
   display: grid; place-items: center; flex: none;
@@ -232,8 +237,8 @@ tr.cited { box-shadow: inset 3px 0 0 var(--blue); }
 .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
 label.field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--secondary); background: var(--card); border-radius: 12px; padding: 12px; }
 label.field input { border: 0; background: var(--fill); border-radius: 8px; padding: 8px; color: var(--text); }
-.table-wrap { overflow-x: visible; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
-.table-wrap.trade { overflow-x: visible; }
+.table-wrap { overflow-x: auto; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
+.table-wrap.trade { overflow-x: auto; }
 @media (max-width: 900px) {
   .table-wrap.trade { overflow-x: auto; }
   .tradeoffs { min-width: 920px; }
@@ -255,7 +260,8 @@ a { color: var(--blue); }
 
 @media (max-width: 900px) {
   .app { flex-direction: column; }
-  .sidebar { position: relative; width: auto; height: auto; max-height: 42vh; }
+  .sidebar { position: relative; width: auto; height: auto; max-height: 46vh; overflow: auto; }
+  .brand h1 { font-size: 34px; }
   .grid, .stats, .controls, .case-grid { grid-template-columns: 1fr; }
   .span-2 { grid-column: auto; }
   .content, .page { padding: 16px 14px 40px; }
@@ -264,7 +270,7 @@ a { color: var(--blue); }
   .nav button, .nav a { min-width: 0; flex: 1; padding: 8px 6px; font-size: 14px; }
   .toolbar { flex-wrap: wrap; height: auto; min-height: 64px; padding: 8px 12px; }
   .decision-row { grid-template-columns: 1fr; }
-  .brand h1 { font-size: 32px; }
+  .brand-blurb { max-width: 36rem; }
   .statement-wrap { max-height: none; }
   .statement thead { display: none; }
   .statement, .statement tbody, .statement tr, .statement td { display: block; width: 100%; }

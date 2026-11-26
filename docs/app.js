@@ -34,9 +34,20 @@
     return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
   }
   function current() { return visible()[state.index]; }
+  const ABOUT = "Reviews transaction-monitoring alerts against each firm's policy and decides, consistently and with cited evidence, whether to close, request information or escalate to the MLRO. Built for AML analysts and compliance teams at banks, payment and FX firms, e-money providers and investment platforms.";
+  function aboutBlock() {
+    return `<section class="about">
+      <h2>ClearPath AML</h2>
+      <p class="brand-role">Alert Triage Assistant</p>
+      <p>${ABOUT}</p>
+    </section>`;
+  }
   function renderCase() {
     const item = current();
-    if (!item) { caseView.innerHTML = `<p class="muted">Load the sample queue or open an institution folder.</p>`; return; }
+    if (!item) {
+      caseView.innerHTML = `${aboutBlock()}<p class="muted">Load the sample queue or open an institution folder.</p>`;
+      return;
+    }
     const ev = new Set(item.decision.evidence || []);
     const cust = item.customer;
     const declared = cust.declared || {};
@@ -155,6 +166,7 @@
     rows.forEach(item => { counts[item.decision.verdict] = (counts[item.decision.verdict] || 0) + 1; });
     const n = rows.length || 1;
     boardView.innerHTML = `
+      ${aboutBlock()}
       <h2>This queue</h2>
       <p class="muted">Verdict mix for the cases on screen. The official cost score needs labels; the hand-labelled sample is on the model-cost page.</p>
       <div class="stats">
