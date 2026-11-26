@@ -40,49 +40,112 @@
     const ev = new Set(item.decision.evidence || []);
     const cust = item.customer;
     const declared = cust.declared || {};
+    const docs = (item.documents || []).map(doc => `<details class="doc ${ev.has(doc.doc_id) ? "hit" : ""}" id="doc-${escapeHtml(doc.doc_id)}">
+          <summary><strong>${escapeHtml(doc.doc_id)}</strong> ${escapeHtml(doc.title || doc.type)}</summary>
+          <pre class="muted" style="white-space:pre-wrap;padding:8px 4px;font-size:15px">${escapeHtml(doc.body || "")}</pre>
+        </details>`).join("");
     caseView.innerHTML = `
-      <div class="hero">
-        <div>
-          <h2>${escapeHtml(cust.name || "Customer")}</h2>
-          <p class="muted">${escapeHtml(item.case.case_id)} · ${escapeHtml(item.institution)} · ${escapeHtml(cust.kind || "")}</p>
-          <p class="footnote">${item.source === "python" ? "Verdict from the Python rules engine (system/run), stored with this sample." : "Verdict from the in-browser port. For a scored file, use system/run."}</p>
+      <div class="case-grid">
+        <div class="span-2 hero">
+          <div>
+            <h2>${escapeHtml(cust.name || "Customer")}</h2>
+            <p class="muted">${escapeHtml(item.case.case_id)} · ${escapeHtml(item.institution)} · ${escapeHtml(cust.kind || "")} · <span class="code">${escapeHtml(item.decision.reason_code)}</span></p>
+          </div>
+          <div>${pill(item.decision.verdict).replace('class="pill', 'class="pill hero-pill')}</div>
         </div>
-        <div>${pill(item.decision.verdict)}</div>
-      </div>
-      <article class="reason">
-        <div class="code" style="margin-bottom:8px">${escapeHtml(item.decision.reason_code)}</div>
-        <p style="margin:0">${escapeHtml(item.decision.reason)}</p>
-      </article>
-      <div class="grid">
+        <article class="action ${escapeHtml(item.decision.verdict)}">
+          <h3>Next action</h3>
+          <p>${escapeHtml(actionLine(item))}</p>
+          ${item.decision.verdict === "ESCALATE" ? `<p class="warn">Do not contact the customer about this activity.</p>` : ""}
+        </article>
+        <section class="card">
+          <h3>Alerts</h3>
+          ${(item.alerts || []).map(a => `<div class="row"><span>${escapeHtml(a.rule_id)}</span><div><strong>${escapeHtml(a.rule_name || "")}</strong><br><span class="muted">${escapeHtml(a.message || "")}</span></div></div>`).join("")}
+        </section>
         <section class="card">
           <h3>Profile</h3>
           ${row("Kind", cust.kind)}
-          ${row("Declared", declared.monthly_income_gbp ? "£" + declared.monthly_income_gbp + " / month" : (declared.annual_turnover_gbp ? "£" + declared.annual_turnover_gbp + " / year" : "—"))}
+          ${row("Declared", declared.monthly_income_gbp ? "£" + Number(declared.monthly_income_gbp).toLocaleString("en-GB") + " / month" : (declared.annual_turnover_gbp ? "£" + Number(declared.annual_turnover_gbp).toLocaleString("en-GB") + " / year" : "—"))}
           ${row("Purpose", declared.account_purpose)}
           ${row("Countries", (declared.expected_countries || []).join(", "))}
           ${row("Window", (item.case.review_window || {}).from + " to " + (item.case.review_window || {}).to)}
         </section>
         <section class="card">
-          <h3>Alerts</h3>
-          ${(item.alerts || []).map(a => `<div class="row"><span>${escapeHtml(a.rule_id)}</span><div>${escapeHtml(a.rule_name || "")}<br><small class="muted">${escapeHtml(a.message || "")}</small></div></div>`).join("")}
+          <h3>Documents</h3>
+          ${docs}
         </section>
-      </div>
-      <section class="card" style="margin-top:16px">
-        <h3>Transactions</h3>
-        ${(item.transactions || []).map(tx => `<button class="tx ${ev.has(tx.transaction_id) ? "hit" : ""}" data-id="${escapeHtml(tx.transaction_id)}">
-          <strong>${escapeHtml(tx.booked_at || "").slice(0, 10)}</strong> ${escapeHtml(tx.direction)} ${escapeHtml(tx.amount_gbp)} · ${escapeHtml(tx.counterparty_name || "")}
-          <small class="muted">${escapeHtml(tx.counterparty_country || "")} · ${escapeHtml(tx.transaction_id)}</small>
-        </button>`).join("")}
-      </section>
-      <section class="card" style="margin-top:16px">
-        <h3>Documents</h3>
-        ${(item.documents || []).map(doc => `<details class="doc ${ev.has(doc.doc_id) ? "hit" : ""}">
-          <summary><strong>${escapeHtml(doc.doc_id)}</strong> ${escapeHtml(doc.title || doc.type)}</summary>
-          <pre class="muted" style="white-space:pre-wrap;padding:8px 4px">${escapeHtml(doc.body || "")}</pre>
-        </details>`).join("")}
-      </section>`;
+        <section class="card span-2">
+          <h3>Statement</h3>
+          ${statementTable(item, ev)}
+          <p class="footnote" style="padding:8px 16px 12px">Oldest first. In is a credit, deposit, top-up or funding receipt. Out is a debit, withdrawal, card spend or payment sent. No running balance: the file has no opening balance. A marker means the row is on an alert or cited as evidence.</p>
+        </section>
+        <section class="card span-2">
+          <h3>Why</h3>
+          <p style="margin:0 16px 14px;font-size:17px">${escapeHtml(item.decision.reason)}</p>
+        </section>
+      </div>`;
   }
   function row(k, v) { return `<div class="row"><span>${escapeHtml(k)}</span><div>${escapeHtml(v || "—")}</div></div>`; }
+  const CHANNEL = {
+    card: "card payment", bacs: "Bacs", faster_payment: "Faster Payment", swift: "SWIFT",
+    cash_deposit: "cash deposit", cash_withdrawal: "cash withdrawal", cash_topup: "cash top-up",
+    wallet_transfer: "wallet transfer", standing_order: "standing order", direct_debit: "direct debit",
+    fund_subscription: "fund purchase", fund_redemption: "fund sale"
+  };
+  function moneyIn(tx) {
+    const direction = String(tx.direction || "").toLowerCase();
+    return direction === "in" || direction === "credit" || direction === "inbound";
+  }
+  function gbp(amount) {
+    const n = Number(amount);
+    if (!Number.isFinite(n)) return "";
+    const sign = n < 0 ? "-" : "";
+    const [whole, frac] = Math.abs(n).toFixed(2).split(".");
+    return sign + "£" + whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "." + frac;
+  }
+  function statementTable(item, evidence) {
+    const alertByTx = {};
+    (item.alerts || []).forEach(alert => {
+      (alert.transaction_ids || []).forEach(id => {
+        (alertByTx[id] = alertByTx[id] || []).push(alert.rule_id);
+      });
+    });
+    const rows = (item.transactions || []).slice().sort((a, b) => String(a.booked_at).localeCompare(String(b.booked_at)) || String(a.transaction_id).localeCompare(String(b.transaction_id)));
+    let totalIn = 0, totalOut = 0;
+    const body = rows.map(tx => {
+      const amount = Number(tx.amount_gbp) || 0;
+      const inbound = moneyIn(tx);
+      if (inbound) totalIn += amount; else totalOut += amount;
+      const rules = [...new Set(alertByTx[tx.transaction_id] || [])];
+      const cited = evidence.has(tx.transaction_id);
+      const flagged = rules.length || cited;
+      const channel = CHANNEL[tx.channel] || String(tx.channel || "").replace(/_/g, " ");
+      const bits = [tx.counterparty_name, tx.counterparty_country, channel, tx.reference].filter(Boolean);
+      const ruleLinks = rules.map(rule => `<span class="flag-link">${escapeHtml(rule)}</span>`).join(" ");
+      const evidenceLink = cited ? ` <a class="flag-link" href="#doc-${escapeHtml((item.decision.evidence || []).find(id => String(id).match(/^[A-Z]+-/)) || "")}">Evidence ${escapeHtml(tx.transaction_id)}</a>` : "";
+      return `<tr id="tx-${escapeHtml(tx.transaction_id)}" class="${cited ? "cited" : ""} ${rules.length ? "alerted" : ""}">
+        <td>${escapeHtml(String(tx.booked_at || "").slice(0, 10))}</td>
+        <td class="desc">${flagged ? `<span class="flag" title="Alerted or cited"></span>` : ""}${escapeHtml(bits.join(" · "))}${ruleLinks || evidenceLink ? `<small>${ruleLinks}${evidenceLink}</small>` : ""}</td>
+        <td class="num in money-in">${inbound ? "+" + gbp(amount) : ""}</td>
+        <td class="num out money-out">${inbound ? "" : "−" + gbp(amount)}</td>
+      </tr>`;
+    }).join("");
+    const net = totalIn - totalOut;
+    return `<div class="statement-wrap"><table class="statement">
+      <thead><tr><th>Date</th><th>Description</th><th class="num">Money in</th><th class="num">Money out</th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot>
+        <tr><td colspan="2">Total</td><td class="num money-in">+${gbp(totalIn)}</td><td class="num money-out">−${gbp(totalOut)}</td></tr>
+        <tr><td colspan="2">Net</td><td class="num" colspan="2">${net < 0 ? "−" : "+"}${gbp(Math.abs(net))}</td></tr>
+      </tfoot>
+    </table></div>`;
+  }
+  function actionLine(item) {
+    if (item.decision.action) return item.decision.action;
+    if (item.decision.verdict === "ESCALATE") return "Escalate to the MLRO. Do not contact the customer about this activity.";
+    if (item.decision.verdict === "RFI") return item.decision.reason;
+    return "No action — close.";
+  }
   function renderBoard() {
     const rows = visible();
     const counts = { CLOSE: 0, RFI: 0, ESCALATE: 0 };
@@ -239,5 +302,14 @@
   if (params.get("theme") === "dark" || params.get("theme") === "light") {
     document.documentElement.setAttribute("data-theme", params.get("theme"));
   }
-  loadSample().catch(err => { caseView.innerHTML = `<p>Could not load the sample queue (${escapeHtml(err.message)}).</p>`; });
+  if (params.get("verdict")) state.filterVerdict = params.get("verdict");
+  if (params.get("view") === "summary") state.view = "board";
+  loadSample().then(() => {
+    if (params.get("verdict")) {
+      document.querySelectorAll("[data-verdict]").forEach(el => el.setAttribute("aria-pressed", el.dataset.verdict === params.get("verdict") ? "true" : "false"));
+    }
+    document.getElementById("tab-case").setAttribute("aria-pressed", state.view === "case" ? "true" : "false");
+    document.getElementById("tab-board").setAttribute("aria-pressed", state.view === "board" ? "true" : "false");
+    render();
+  }).catch(err => { caseView.innerHTML = `<p>Could not load the sample queue (${escapeHtml(err.message)}).</p>`; });
 })();

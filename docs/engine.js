@@ -338,14 +338,32 @@
       ]);
     }
     const known = new Set(ctx.docs.map(d => d.id).concat(ctx.txs.map(t => t.transaction_id), Object.keys(ctx.list || {})));
-    return {
+    const evidence = [...new Set(winner.evidence.filter(id => known.has(id)))].sort();
+    const decision = {
       case_id: ctx.case.case_id,
       alert_ids: ctx.case.alert_ids || ctx.alerts.map(a => a.alert_id),
       verdict: winner.verdict,
       reason_code: winner.reason_code,
       reason: winner.sentences.join(" "),
-      evidence: [...new Set(winner.evidence.filter(id => known.has(id)))].sort()
+      evidence
     };
+    decision.action = browserAction(ctx, decision);
+    return decision;
+  }
+
+  function browserAction(ctx, decision) {
+    const held = (ctx.txs || []).find(tx => tx.transaction_id === (ctx.case.held_payment_id));
+    const hold = held && ctx.institution === "payments_fx"
+      ? `Keep the held payment of ${gbp(Math.round(Number(held.amount_gbp) * 100))} to ${held.counterparty_name || "the beneficiary"} held. `
+      : "";
+    const release = held && ctx.institution === "payments_fx"
+      ? ` and release the held payment of ${gbp(Math.round(Number(held.amount_gbp) * 100))} to ${held.counterparty_name || "the beneficiary"}.`
+      : ".";
+    if (decision.verdict === "CLOSE") return "No action — close" + (release === "." ? "." : release);
+    if (decision.verdict === "ESCALATE") {
+      return `${hold}Escalate to the MLRO. Key evidence: ${decision.evidence.slice(0, 6).join(", ") || "the alerted transactions"}. Do not contact the customer about this activity.`;
+    }
+    return `${hold}Request the missing document from ${ctx.customer.name}. ${decision.reason}`;
   }
 
   function triageInstitution(payload) {

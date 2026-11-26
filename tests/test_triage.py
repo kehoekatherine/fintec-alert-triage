@@ -77,6 +77,29 @@ def test_five_runs_are_identical_on_bank():
         assert triage_bundle(bundle) == first
 
 
+def test_action_text_matches_the_verdict():
+    for institution in ("bank", "emoney", "investment", "payments_fx"):
+        bundle = load_institution(ROOT / "institutions" / institution)
+        cases = {case["case_id"]: case for case in bundle["cases"]}
+        for decision in triage_bundle(bundle):
+            action = decision["action"]
+            assert action
+            if decision["verdict"] == "RFI":
+                assert "Request" in action
+                assert "Do not contact the customer" not in action
+            elif decision["verdict"] == "ESCALATE":
+                assert "Escalate to the MLRO" in action
+                assert "Do not contact the customer about this activity" in action
+            else:
+                assert action.startswith("No action — close")
+            held = cases[decision["case_id"]].get("held_payment_id")
+            if institution == "payments_fx" and held:
+                if decision["verdict"] == "CLOSE":
+                    assert "release the held payment" in action
+                else:
+                    assert "Keep the held payment" in action
+
+
 def test_hand_labels_agree_with_the_engine():
     payload = json.loads((ROOT / "docs" / "data" / "hand_labels.json").read_text())
     assert payload["labels"]

@@ -1790,7 +1790,119 @@ def _best(findings):
     return sorted(findings, key=lambda item: (item["priority"], -item["amount"], item.get("alert_id") or "", item["reason_code"]))[0]
 
 
-def _render(case, winner, known):
+_CHANNEL = {
+    "card": "card payment",
+    "bacs": "Bacs payment",
+    "faster_payment": "Faster Payment",
+    "swift": "SWIFT payment",
+    "cash_deposit": "cash deposit",
+    "cash_withdrawal": "cash withdrawal",
+    "cash_topup": "cash top-up",
+    "wallet_transfer": "wallet transfer",
+    "standing_order": "standing order",
+    "direct_debit": "direct debit",
+    "fund_subscription": "fund purchase",
+    "fund_redemption": "fund sale",
+}
+
+_GROUNDS = {
+    "ESC_MULE_ACTIVITY": "the account is receiving and passing on other people's money",
+    "ESC_STRUCTURING": "transactions were split to stay under a threshold",
+    "ESC_UNEXPLAINED_FUNDS": "the money has no credible explanation and was moved on",
+    "ESC_PASS_THROUGH": "money is passing through with no credible purpose",
+    "ESC_INVOICE_MISMATCH": "the invoices do not support the payments",
+    "ESC_HIGH_RISK_CORRIDOR": "payments to or from a higher-risk country are unexplained",
+    "ESC_ACCOUNT_MISUSE": "someone other than the customer appears to be using the account",
+    "ESC_THIRD_PARTY_FUNDING": "unrelated third parties are funding the account or receiving from it",
+    "ESC_EARLY_REDEMPTION": "fund units were bought and quickly sold to move money",
+    "ESC_LISTED_PARTY": "the counterparty is the listed party or is controlled by it",
+}
+
+
+def _is_inflow(tx: dict) -> bool:
+    direction = (tx.get("direction") or "").lower()
+    return direction in {"in", "credit", "inbound"}
+
+
+def _focus_tx(ctx, evidence: list[str], prefer: str | None):
+    wanted = set(evidence)
+    pool = [tx for tx in ctx["txs"] if tx.get("transaction_id") in wanted]
+    if not pool:
+        for alert in ctx["alerts"]:
+            pool.extend(_alert_txs(ctx, alert))
+    if prefer == "in":
+        chosen = [tx for tx in pool if _is_inflow(tx)]
+        pool = chosen or pool
+    elif prefer == "out":
+        chosen = [tx for tx in pool if not _is_inflow(tx)]
+        pool = chosen or pool
+    if not pool:
+        held = ctx.get("held")
+        return held
+    return max(pool, key=lambda tx: (_tx_pence(tx), tx.get("transaction_id") or ""))
+
+
+def _tx_clause(tx: dict | None) -> str:
+    if not tx:
+        return ""
+    channel = _CHANNEL.get(tx.get("channel") or "", (tx.get("channel") or "payment").replace("_", " "))
+    party = tx.get("counterparty_name") or "the counterparty"
+    country = tx.get("counterparty_country") or ""
+    where = f" in {country}" if country else ""
+    when = fmt_date(_tx_date(tx))
+    amount = gbp(_tx_pence(tx))
+    ident = tx.get("transaction_id") or ""
+    verb = "received from" if _is_inflow(tx) else "paid to"
+    return f"the {amount} {channel} {verb} {party}{where} on {when} ({ident})"
+
+
+def _held_clause(ctx, release: bool) -> str:
+    held = ctx.get("held")
+    if not held or ctx.get("institution") != "payments_fx":
+        return ""
+    amount = gbp(_tx_pence(held))
+    party = held.get("counterparty_name") or "the beneficiary"
+    if release:
+        return f"Release the held payment of {amount} to {party}."
+    return f"Keep the held payment of {amount} to {party} held."
+
+
+def _action_text(ctx, winner, evidence: list[str]) -> str:
+    code = winner["reason_code"]
+    verdict = winner["verdict"]
+    customer = _customer_name(ctx)
+    if verdict == "CLOSE":
+        release = _held_clause(ctx, True)
+        if release:
+            return f"No action — close and {release[0].lower()}{release[1:]}"
+        return "No action — close."
+    if verdict == "ESCALATE":
+        grounds = _GROUNDS.get(code, "the activity is unexplained or there are signs of crime")
+        cited = human_join(evidence[:6]) or "the transactions on the alert"
+        hold = _held_clause(ctx, False)
+        parts = [part for part in (hold, f"Escalate to the MLRO. Grounds: {grounds}. Key evidence: {cited}. Do not contact the customer about this activity.") if part]
+        return " ".join(parts)
+    prefer = "out" if code in {"RFI_PURPOSE_DOCUMENTS", "RFI_BUSINESS_RECORDS"} else "in"
+    if code == "RFI_UPDATED_PROFILE":
+        prefer = None
+    tx = _focus_tx(ctx, evidence, prefer)
+    clause = _tx_clause(tx)
+    about = f" for {clause}" if clause else ""
+    prompts = {
+        "RFI_SOURCE_OF_FUNDS": f"Request proof of the source of funds from {customer}{about}.",
+        "RFI_PURPOSE_DOCUMENTS": f"Request the invoice or contract from {customer}{about}.",
+        "RFI_BUSINESS_RECORDS": f"Request the business records from {customer}{about}, such as till reports or collection sheets.",
+        "RFI_COUNTERPARTY_DETAILS": f"Request from {customer} who the counterparty is and what the payment was for{about}.",
+        "RFI_UPDATED_PROFILE": f"Request an updated expected income or payment volume from {customer}{about}.",
+    }
+    ask = prompts.get(code, f"Request the missing document from {customer}{about}.")
+    hold = _held_clause(ctx, False)
+    if hold:
+        return f"{hold} {ask}"
+    return ask
+
+
+def _render(case, winner, known, ctx):
     evidence = []
     for item in winner["evidence"]:
         if item and item in known and item not in evidence:
@@ -1807,6 +1919,7 @@ def _render(case, winner, known):
         "reason_code": winner["reason_code"],
         "reason": reason,
         "evidence": evidence,
+        "action": _action_text(ctx, winner, evidence),
     }
 
 
@@ -1830,7 +1943,7 @@ def decide_case(ctx) -> dict:
         findings.append(handler(alert, ctx))
     escalations = [item for item in findings if item["verdict"] == "ESCALATE"]
     if escalations:
-        return _render(case, _best(escalations), ctx["known"])
+        return _render(case, _best(escalations), ctx["known"], ctx)
     rfis = [item for item in findings if item["verdict"] == "RFI"]
     by_alert = {}
     for item in findings:
@@ -1856,16 +1969,16 @@ def decide_case(ctx) -> dict:
                     extra_sentences.append(item["sentences"][0])
         winner["evidence"] = extra_evidence
         winner["sentences"] = (winner["sentences"] + extra_sentences)[:4]
-        return _render(case, winner, ctx["known"])
+        return _render(case, winner, ctx["known"], ctx)
     if rfis:
-        return _render(case, _best(rfis), ctx["known"])
+        return _render(case, _best(rfis), ctx["known"], ctx)
     return _render(case, _finding(
         "ESCALATE", "ESC_UNEXPLAINED_FUNDS", [],
         [
             f"The alerts on {_customer_name(ctx)} are not explained by the documents on file.",
             "The case is escalated to the MLRO.",
         ],
-    ), ctx["known"])
+    ), ctx["known"], ctx)
 
 
 def _context_for(bundle, case) -> dict:
@@ -1933,5 +2046,6 @@ def triage_bundle(bundle: dict) -> list[dict]:
                 "reason_code": "ESC_UNEXPLAINED_FUNDS",
                 "reason": "The case could not be assessed from the files in the institution folder. It is escalated to the MLRO.",
                 "evidence": [],
+                "action": "Escalate to the MLRO. Grounds: the case could not be assessed from the files. Do not contact the customer about this activity.",
             })
     return decisions

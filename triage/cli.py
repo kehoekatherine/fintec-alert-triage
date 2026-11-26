@@ -20,6 +20,7 @@ def dumps_line(decision: dict) -> str:
         "reason_code": decision["reason_code"],
         "reason": decision["reason"],
         "evidence": decision["evidence"],
+        "action": decision.get("action") or "",
     }
     return json.dumps(ordered, ensure_ascii=False, separators=(", ", ": "))
 

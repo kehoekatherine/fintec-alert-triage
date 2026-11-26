@@ -112,7 +112,7 @@ One output line:
 {"case_id": "...", "alert_ids": ["..."], "verdict": "CLOSE", "reason_code": "INVOICE_MATCHES", "reason": "Two to four sentences naming the people, amounts and documents.", "evidence": ["INV-1", "TX-1"]}
 ```
 
-A case missing from the file counts as an escalation. This system writes every case.
+A case missing from the file counts as an escalation. This system writes every case. Each line also has `action`: what the analyst should do next. For an RFI it names the document, the customer and the transaction. For an escalation it says to send the case to the MLRO, lists the evidence ids, and says not to contact the customer. A close says there is no further action, and a held payment at the payments firm is either released or kept held.
 
 ## Determinism and safety
 
@@ -174,15 +174,23 @@ PYTHONPATH=. python3 scripts/build_site_data.py
 
 ## Screenshots
 
-Light and dark, queue and model-cost page:
+Wide desktop and a phone-width view, light and dark. The case page is a statement plus a next-action card. `action` is an extra field on each output line, after the fields the harness requires.
 
-![Queue, light](docs/screenshots/queue-light.png)
+![Queue, light, wide](docs/screenshots/queue-light.png)
 
-![Queue, dark](docs/screenshots/queue-dark.png)
+![Queue, dark, wide](docs/screenshots/queue-dark.png)
+
+![Queue, light, phone](docs/screenshots/queue-light-mobile.png)
+
+![Queue, dark, phone](docs/screenshots/queue-dark-mobile.png)
 
 ![Model cost, light](docs/screenshots/cost-light.png)
 
 ![Model cost, dark](docs/screenshots/cost-dark.png)
+
+![Model cost, light, phone](docs/screenshots/cost-light-mobile.png)
+
+![Model cost, dark, phone](docs/screenshots/cost-dark-mobile.png)
 
 ## Pages
 

@@ -10,8 +10,8 @@
       "input_tokens_mean_est": 2830,
       "input_tokens_p90_est": 3863,
       "output_tokens_rules_est": 91,
-      "load_seconds": 0.394,
-      "triage_seconds": 0.307
+      "load_seconds": 0.447,
+      "triage_seconds": 0.344
     },
     "emoney": {
       "cases": 1000,
@@ -22,8 +22,8 @@
       "input_tokens_mean_est": 2656,
       "input_tokens_p90_est": 3712,
       "output_tokens_rules_est": 87,
-      "load_seconds": 0.37,
-      "triage_seconds": 0.299
+      "load_seconds": 0.457,
+      "triage_seconds": 0.333
     },
     "investment": {
       "cases": 1000,
@@ -34,8 +34,8 @@
       "input_tokens_mean_est": 1168,
       "input_tokens_p90_est": 1482,
       "output_tokens_rules_est": 81,
-      "load_seconds": 0.135,
-      "triage_seconds": 0.201
+      "load_seconds": 0.162,
+      "triage_seconds": 0.225
     },
     "payments_fx": {
       "cases": 1000,
@@ -46,13 +46,13 @@
       "input_tokens_mean_est": 2405,
       "input_tokens_p90_est": 2857,
       "output_tokens_rules_est": 92,
-      "load_seconds": 0.382,
-      "triage_seconds": 0.376
+      "load_seconds": 0.446,
+      "triage_seconds": 0.46
     }
   },
   "held_payments": 489,
   "held_payments_closed": 127,
   "input_tokens_mean_est": 2265,
   "output_tokens_rules_est": 88,
-  "triage_seconds_per_case": 0.000296
+  "triage_seconds_per_case": 0.000341
 }
