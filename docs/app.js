@@ -53,11 +53,18 @@
           </div>
           <div>${pill(item.decision.verdict).replace('class="pill', 'class="pill hero-pill')}</div>
         </div>
-        <article class="action ${escapeHtml(item.decision.verdict)}">
-          <h3>Next action</h3>
-          <p>${escapeHtml(actionLine(item))}</p>
-          ${item.decision.verdict === "ESCALATE" ? `<p class="warn">Do not contact the customer about this activity.</p>` : ""}
-        </article>
+        <div class="decision-row">
+          <article class="why">
+            <h3>Why</h3>
+            <p class="code">${escapeHtml(item.decision.reason_code)}</p>
+            <p>${escapeHtml(item.decision.reason)}</p>
+            <p class="footnote">Evidence ${(item.decision.evidence || []).map(id => `<a href="#doc-${escapeHtml(id)}">${escapeHtml(id)}</a>`).join(", ") || "none cited"}</p>
+          </article>
+          <article class="action ${escapeHtml(item.decision.verdict)}">
+            <h3>Next action</h3>
+            <p>${escapeHtml(actionLine(item))}</p>
+          </article>
+        </div>
         <section class="card">
           <h3>Alerts</h3>
           ${(item.alerts || []).map(a => `<div class="row"><span>${escapeHtml(a.rule_id)}</span><div><strong>${escapeHtml(a.rule_name || "")}</strong><br><span class="muted">${escapeHtml(a.message || "")}</span></div></div>`).join("")}
@@ -78,10 +85,6 @@
           <h3>Statement</h3>
           ${statementTable(item, ev)}
           <p class="footnote" style="padding:8px 16px 12px">Oldest first. In is a credit, deposit, top-up or funding receipt. Out is a debit, withdrawal, card spend or payment sent. No running balance: the file has no opening balance. A marker means the row is on an alert or cited as evidence.</p>
-        </section>
-        <section class="card span-2">
-          <h3>Why</h3>
-          <p style="margin:0 16px 14px;font-size:17px">${escapeHtml(item.decision.reason)}</p>
         </section>
       </div>`;
   }
@@ -166,12 +169,20 @@
         <i class="ESCALATE" style="width:${(counts.ESCALATE || 0) / n * 100}%"></i>
       </div>`;
   }
+  function showView() {
+    caseView.hidden = state.view !== "case";
+    boardView.hidden = state.view !== "board";
+    const cost = document.getElementById("cost-view");
+    if (cost) cost.hidden = state.view !== "cost";
+    document.getElementById("tab-case").setAttribute("aria-pressed", state.view === "case" ? "true" : "false");
+    document.getElementById("tab-board").setAttribute("aria-pressed", state.view === "board" ? "true" : "false");
+    document.getElementById("tab-cost").setAttribute("aria-pressed", state.view === "cost" ? "true" : "false");
+  }
   function render() {
     renderQueue();
-    const showBoard = state.view === "board";
-    caseView.hidden = showBoard;
-    boardView.hidden = !showBoard;
-    if (showBoard) renderBoard(); else renderCase();
+    showView();
+    if (state.view === "board") renderBoard();
+    else if (state.view === "case") renderCase();
   }
   function addItems(list) { state.items = list; state.index = 0; render(); }
   async function loadSample() {
@@ -285,8 +296,9 @@
     document.querySelectorAll("[data-verdict]").forEach(el => el.setAttribute("aria-pressed", el === btn ? "true" : "false"));
     render();
   }));
-  document.getElementById("tab-case").addEventListener("click", () => { state.view = "case"; document.getElementById("tab-case").setAttribute("aria-pressed", "true"); document.getElementById("tab-board").setAttribute("aria-pressed", "false"); render(); });
-  document.getElementById("tab-board").addEventListener("click", () => { state.view = "board"; document.getElementById("tab-board").setAttribute("aria-pressed", "true"); document.getElementById("tab-case").setAttribute("aria-pressed", "false"); render(); });
+  document.getElementById("tab-case").addEventListener("click", () => { state.view = "case"; render(); });
+  document.getElementById("tab-board").addEventListener("click", () => { state.view = "board"; render(); });
+  document.getElementById("tab-cost").addEventListener("click", () => { state.view = "cost"; render(); });
   document.querySelectorAll("[data-theme]").forEach(btn => btn.addEventListener("click", () => {
     const theme = btn.dataset.theme;
     if (theme === "system") document.documentElement.removeAttribute("data-theme");
@@ -304,12 +316,15 @@
   }
   if (params.get("verdict")) state.filterVerdict = params.get("verdict");
   if (params.get("view") === "summary") state.view = "board";
+  if (params.get("view") === "cost" || params.get("shot") === "tradeoffs" || params.get("shot") === "charts") state.view = "cost";
   loadSample().then(() => {
     if (params.get("verdict")) {
       document.querySelectorAll("[data-verdict]").forEach(el => el.setAttribute("aria-pressed", el.dataset.verdict === params.get("verdict") ? "true" : "false"));
     }
-    document.getElementById("tab-case").setAttribute("aria-pressed", state.view === "case" ? "true" : "false");
-    document.getElementById("tab-board").setAttribute("aria-pressed", state.view === "board" ? "true" : "false");
     render();
+    const shot = params.get("shot");
+    const shotNode = shot === "tradeoffs" ? document.getElementById("tradeoffs")
+      : shot === "charts" ? document.getElementById("cost-chart") : null;
+    if (shotNode) shotNode.scrollIntoView({ block: "start" });
   }).catch(err => { caseView.innerHTML = `<p>Could not load the sample queue (${escapeHtml(err.message)}).</p>`; });
 })();

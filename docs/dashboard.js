@@ -95,43 +95,110 @@
       </tr>`;
     }).join("");
     renderCharts(rows.filter(model => !model.isRules));
+    renderTradeoffs(rows.filter(model => !model.isRules));
+  }
+
+  function chip(kind, label) {
+    return `<span class="chip ${kind}">${label}</span>`;
+  }
+  function cell(kind, label, line) {
+    return `<td>${chip(kind, label)}<div>${line}</div></td>`;
+  }
+  function renderTradeoffs(list) {
+    const rulesTime = (payload.triage_seconds_per_case * 200).toFixed(2) + " s measured";
+    const head = `<tr><th>Option</th><th>Accuracy on these cases</th><th>Determinism</th><th>Data privacy</th><th>Rate limits</th><th>Wrongful-close safety</th><th>Cost per 800 cases</th><th>Time for 200 cases</th></tr>`;
+    const rules = `<tr>
+      <th>Rules baseline</th>
+      ${cell("good", "Sample only", "Matches 28 hand labels. Not an official key.")}
+      ${cell("good", "Good", "Five bank runs were identical.")}
+      ${cell("good", "Good", "The case folder stays on this machine.")}
+      ${cell("good", "Good", "Local CPU only.")}
+      ${cell("good", "Good", "Does not close once suspicion exists.")}
+      <td>${chip("good", "£0")}<div>No token charge.</div></td>
+      <td>${chip("good", "Under 30 min")}<div>${rulesTime}.</div></td>
+    </tr>`;
+    const body = list.map(model => {
+      const cost = modelCost(model);
+      const minutes = cost.seconds * 200 / 60;
+      const timeKind = minutes <= 30 ? "caution" : "risk";
+      const timeLabel = minutes <= 30 ? "Estimate" : "Over 30 min";
+      const privacy = model.id.includes("llama")
+        ? cell("caution", "Caution", "Sent to Groq unless you self-host. GPU cost is not in this price.")
+        : cell("risk", "Risk", "Case text is sent to " + model.provider + ".");
+      const speedNote = model.published_output_tokens_per_sec ? "From the published tokens/sec figure." : "Speed is an assumption, not a measurement.";
+      return `<tr>
+        <th>${model.label}</th>
+        ${cell("unknown", "Unknown", "Not measured.")}
+        ${cell("caution", "Caution", "Temperature 0 and a cache. Not guaranteed.")}
+        ${privacy}
+        ${cell("caution", "Caution", "Provider quotas can stall a run.")}
+        ${cell("caution", "Caution", "Can close a case the rules would escalate.")}
+        <td>${chip("caution", "Priced")}<div>${money(cost.per800)} at the sliders above.</div></td>
+        <td>${chip(timeKind, timeLabel)}<div>${minutes.toFixed(1)} min. ${speedNote}</div></td>
+      </tr>`;
+    }).join("");
+    $("tradeoffs-table").innerHTML = `<table class="tradeoffs"><thead>${head}</thead><tbody>${rules}${body}</tbody></table>`;
   }
 
   function renderCharts(list) {
-    const costs = list.map(model => modelCost(model).per1000);
-    const max = Math.max(...costs, 1);
-    const w = 460, h = 220, pad = 28;
-    const bw = (w - pad * 2) / list.length * 0.6;
-    const bars = list.map((model, i) => {
-      const bh = (costs[i] / max) * (h - 60);
-      const x = pad + i * ((w - pad * 2) / list.length) + 8;
-      const y = h - 36 - bh;
-      return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="6" fill="var(--blue)"></rect>
-        <text x="${x + bw / 2}" y="${h - 16}" text-anchor="middle" font-size="11" fill="var(--secondary)">${model.label.split(" ")[0]}</text>
-        <text x="${x + bw / 2}" y="${y - 6}" text-anchor="middle" font-size="11" fill="var(--text)">${money(costs[i], 0)}</text>`;
-    }).join("");
-    $("cost-chart").innerHTML = `<h3 style="margin:0 0 8px">GBP per 1,000 cases</h3><svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Cost per one thousand cases">${bars}</svg>`;
+    const rulesSeconds = payload.triage_seconds_per_case * 200;
+    const rows = list.map(model => ({
+      label: model.label.split(" ")[0],
+      cost: modelCost(model).per1000,
+      seconds: modelCost(model).seconds * 200,
+      colour: "var(--blue)",
+      timeColour: model.published_output_tokens_per_sec ? "var(--blue)" : "var(--orange)",
+      rules: false
+    })).concat([{
+      label: "Rules",
+      cost: 0,
+      seconds: rulesSeconds,
+      colour: "var(--green)",
+      rules: true
+    }]);
 
-    const times = [{ label: "Rules", seconds: payload.triage_seconds_per_case * 200, published: true }]
-      .concat(list.map(model => ({ label: model.label.split(" ")[0], seconds: modelCost(model).seconds * 200, published: !!model.published_output_tokens_per_sec })));
-    const tmax = Math.max(...times.map(t => t.seconds), 1800);
-    const tbw = (w - pad * 2) / times.length * 0.55;
-    const tbars = times.map((row, i) => {
-      const bh = (row.seconds / tmax) * (h - 70);
-      const x = pad + i * ((w - pad * 2) / times.length) + 10;
-      const y = h - 36 - bh;
-      const colour = row.label === "Rules" ? "var(--green)" : (row.published ? "var(--blue)" : "var(--orange)");
-      return `<rect x="${x}" y="${y}" width="${tbw}" height="${bh}" rx="6" fill="${colour}"></rect>
-        <text x="${x + tbw / 2}" y="${h - 16}" text-anchor="middle" font-size="11" fill="var(--secondary)">${row.label}</text>`;
+    const w = 520, h = 248, padL = 12, padR = 8, base = 196, plotH = 148;
+    const slot = (w - padL - padR) / rows.length;
+    const bw = Math.min(52, slot * 0.62);
+    const axis = `<line x1="${padL}" x2="${w - padR}" y1="${base}" y2="${base}" stroke="var(--separator)" stroke-width="1.5"></line>`;
+
+    const maxCost = Math.max(...rows.map(row => row.cost), 1);
+    const costBars = rows.map((row, i) => {
+      const raw = (row.cost / maxCost) * plotH;
+      const bh = row.rules ? 6 : raw;
+      const x = padL + i * slot + (slot - bw) / 2;
+      const y = base - bh;
+      const value = row.rules ? "£0" : money(row.cost, 0);
+      return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="${row.rules ? 2 : 6}" fill="${row.colour}"></rect>
+        <text x="${x + bw / 2}" y="${y - 8}" text-anchor="middle" font-size="13" font-weight="650" fill="${row.rules ? "var(--green)" : "var(--text)"}">${value}</text>
+        <text x="${x + bw / 2}" y="${base + 20}" text-anchor="middle" font-size="13" fill="${row.rules ? "var(--green)" : "var(--secondary)"}">${row.label}</text>`;
     }).join("");
-    const limitY = h - 36 - (1800 / tmax) * (h - 70);
+    $("cost-chart").innerHTML = `<h3 style="margin:0 0 8px">GBP per 1,000 cases</h3>
+      <svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Cost per one thousand cases. Four models, then the rules engine at zero pounds on the right.">${axis}${costBars}</svg>`;
+
+    const tmax = Math.max(...rows.map(row => row.seconds), 1800);
+    const limitY = base - (1800 / tmax) * plotH;
+    const timeBars = rows.map((row, i) => {
+      const raw = (row.seconds / tmax) * plotH;
+      const bh = row.rules ? Math.max(raw, 6) : raw;
+      const x = padL + i * slot + (slot - bw) / 2;
+      const y = base - bh;
+      const minutes = row.seconds / 60;
+      const value = row.rules
+        ? (minutes < 0.1 ? row.seconds.toFixed(2) + " s" : minutes.toFixed(1) + " min")
+        : minutes.toFixed(1) + " min";
+      const fill = row.rules ? "var(--green)" : row.timeColour;
+      return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="${row.rules ? 2 : 6}" fill="${fill}"></rect>
+        <text x="${x + bw / 2}" y="${y - 8}" text-anchor="middle" font-size="13" font-weight="650" fill="${row.rules ? "var(--green)" : "var(--text)"}">${value}</text>
+        <text x="${x + bw / 2}" y="${base + 20}" text-anchor="middle" font-size="13" fill="${row.rules ? "var(--green)" : "var(--secondary)"}">${row.label}</text>`;
+    }).join("");
     $("time-chart").innerHTML = `<h3 style="margin:0 0 8px">Minutes for 200 cases</h3>
-      <svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Time for two hundred cases against the thirty minute limit">
-        <line x1="${pad}" x2="${w - 8}" y1="${limitY}" y2="${limitY}" stroke="var(--red)" stroke-dasharray="4 4"></line>
-        <text x="${w - 8}" y="${limitY - 4}" text-anchor="end" font-size="11" fill="var(--red)">30 min</text>
-        ${tbars}
+      <svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Time for two hundred cases. Models first, rules engine last, against the thirty minute limit.">
+        <line x1="${padL}" x2="${w - padR}" y1="${limitY}" y2="${limitY}" stroke="var(--red)" stroke-dasharray="4 4"></line>
+        <text x="${w - padR}" y="${Math.max(14, limitY - 6)}" text-anchor="end" font-size="12" fill="var(--red)">30 min</text>
+        ${axis}${timeBars}
       </svg>
-      <p class="footnote">Green is measured. Blue uses a published tokens-per-second figure. Orange is an assumption you can edit in the JSON file. Input processing time is not included.</p>`;
+      <p class="footnote">Same order on both charts: the four models, then Rules on the right in green. The rules bar is measured (£0, and ${rulesSeconds.toFixed(2)} seconds for 200 cases). A short green stub keeps that zero-height bar visible. Blue uses a published tokens-per-second figure. Orange is an assumption. Input processing time is not included.</p>`;
   }
 
   function renderSources() {

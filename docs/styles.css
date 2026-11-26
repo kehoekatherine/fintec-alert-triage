@@ -64,7 +64,9 @@
 :root[data-theme="light"] { color-scheme: light; }
 
 * { box-sizing: border-box; }
+html { scrollbar-gutter: stable; }
 html, body { margin: 0; height: 100%; }
+body { overflow-y: scroll; }
 body {
   font-family: var(--sans);
   background: var(--bg);
@@ -98,10 +100,10 @@ button { cursor: pointer; }
   padding: 18px 12px 12px;
 }
 .brand { display: flex; gap: 10px; align-items: center; padding: 4px 8px 14px; }
-.brand h1 { font-size: 28px; margin: 0; font-weight: 760; letter-spacing: -0.03em; line-height: 1.1; }
-.brand p { margin: 4px 0 0; color: var(--secondary); font-size: 13px; }
+.brand h1 { font-size: 34px; margin: 0; font-weight: 800; letter-spacing: -0.035em; line-height: 1.05; }
+.brand p { margin: 4px 0 0; color: var(--secondary); font-size: 13px; font-weight: 500; }
 .mark {
-  width: 32px; height: 32px; border-radius: 8px; background: var(--blue); color: white;
+  width: 40px; height: 40px; border-radius: 10px; background: var(--blue); color: white;
   display: grid; place-items: center; flex: none;
 }
 .search {
@@ -135,8 +137,8 @@ button { cursor: pointer; }
 .workspace { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .toolbar {
   position: sticky; top: 0; z-index: 2;
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  min-height: 56px; padding: 10px 22px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: nowrap;
+  height: 64px; min-height: 64px; padding: 0 22px;
   background: var(--elevated);
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
@@ -183,8 +185,12 @@ button { cursor: pointer; }
 }
 .doc strong { font-weight: 620; }
 .hit { background: color-mix(in srgb, var(--blue) 18%, transparent); }
+.decision-row { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+.why, .action { margin: 0; height: 100%; }
+.why { background: var(--card); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+.why h3, .action h3 { margin: 0 0 8px; font-size: 22px; letter-spacing: -0.02em; font-weight: 720; }
 .action {
-  border-radius: var(--radius); padding: 16px 18px; margin-bottom: 16px; background: var(--card);
+  border-radius: var(--radius); padding: 16px 18px; margin: 0; background: var(--card);
   box-shadow: var(--shadow); border-left: 4px solid var(--blue);
 }
 .action.RFI { border-left-color: var(--orange); }
@@ -226,7 +232,20 @@ tr.cited { box-shadow: inset 3px 0 0 var(--blue); }
 .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
 label.field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--secondary); background: var(--card); border-radius: 12px; padding: 12px; }
 label.field input { border: 0; background: var(--fill); border-radius: 8px; padding: 8px; color: var(--text); }
-.table-wrap { overflow: auto; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
+.table-wrap { overflow-x: visible; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
+.table-wrap.trade { overflow-x: visible; }
+@media (max-width: 900px) {
+  .table-wrap.trade { overflow-x: auto; }
+  .tradeoffs { min-width: 920px; }
+}
+.tradeoffs { table-layout: fixed; }
+.tradeoffs th { font-size: 14px; text-transform: none; letter-spacing: -0.01em; color: var(--text); font-weight: 720; white-space: normal; }
+.tradeoffs td { font-size: 14px; overflow-wrap: anywhere; }
+.chip { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; border-radius: 999px; padding: 2px 8px; color: #fff; margin: 0 0 4px; }
+.chip.good { background: var(--green); }
+.chip.caution { background: var(--orange); }
+.chip.risk { background: var(--red); }
+.chip.unknown { background: var(--fill-strong); color: var(--text); }
 table { width: 100%; border-collapse: collapse; font-size: 16px; }
 th, td { text-align: left; padding: 10px 12px; border-bottom: 0.5px solid var(--separator); vertical-align: top; }
 th { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--secondary); font-weight: 650; }
@@ -243,6 +262,9 @@ a { color: var(--blue); }
   .hero h2, .page h1 { font-size: 32px; }
   .nav { width: 100%; }
   .nav button, .nav a { min-width: 0; flex: 1; padding: 8px 6px; font-size: 14px; }
+  .toolbar { flex-wrap: wrap; height: auto; min-height: 64px; padding: 8px 12px; }
+  .decision-row { grid-template-columns: 1fr; }
+  .brand h1 { font-size: 32px; }
   .statement-wrap { max-height: none; }
   .statement thead { display: none; }
   .statement, .statement tbody, .statement tr, .statement td { display: block; width: 100%; }
