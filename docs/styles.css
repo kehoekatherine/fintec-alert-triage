@@ -103,10 +103,14 @@ button { cursor: pointer; }
 .brand h1 { font-size: 34px; margin: 6px 0 0; font-weight: 800; letter-spacing: -0.04em; line-height: 1.02; white-space: nowrap; }
 .brand-role { margin: 2px 0 0; color: var(--text); font-size: 15px; font-weight: 650; letter-spacing: -0.015em; line-height: 1.2; }
 .brand-blurb { margin: 6px 0 0; color: var(--secondary); font-size: 13px; font-weight: 500; line-height: 1.35; }
-.about { margin: 0 0 22px; max-width: 760px; }
+.about { margin: 0 0 22px; max-width: 820px; scroll-margin-top: 76px; }
 .about h2 { margin: 0 0 6px; font-size: 28px; font-weight: 760; letter-spacing: -0.03em; }
+.about h3 { margin: 18px 0 6px; font-size: 20px; font-weight: 720; letter-spacing: -0.02em; }
 .about .brand-role { margin: 0 0 10px; }
-.about p:last-child { margin: 0; font-size: 17px; line-height: 1.45; }
+.about p, .about li { font-size: 17px; line-height: 1.45; }
+.about p { margin: 0 0 10px; }
+.about ol, .about ul { margin: 0 0 8px; padding-left: 1.25em; }
+.about li { margin: 4px 0; }
 .mark {
   width: 40px; height: 40px; border-radius: 10px; background: var(--blue); color: white;
   display: grid; place-items: center; flex: none;
@@ -130,7 +134,7 @@ button { cursor: pointer; }
   font-size: 15px;
 }
 .qrow small { color: var(--secondary); font-size: 12px; }
-.qrow[aria-current="true"] { background: color-mix(in srgb, var(--blue) 16%, transparent); }
+.qrow[aria-current="true"], .qrow[aria-selected="true"] { background: color-mix(in srgb, var(--blue) 18%, transparent); }
 .pill {
   justify-self: end; align-self: center; font-size: 12px; font-weight: 700; letter-spacing: .04em;
   border-radius: 999px; padding: 3px 8px; color: white;
@@ -156,7 +160,8 @@ button { cursor: pointer; }
 }
 .nav button, .nav a {
   border: 0; background: transparent; color: var(--secondary); text-decoration: none;
-  font-weight: 650; font-size: 15px; border-radius: 9px; padding: 8px 16px; min-width: 108px; text-align: center;
+  font-weight: 650; font-size: 15px; border-radius: 9px; padding: 8px 14px; min-width: 0; text-align: center;
+  white-space: nowrap;
 }
 .nav button[aria-pressed="true"], .nav a[aria-current="page"] {
   background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12);
@@ -268,7 +273,7 @@ a { color: var(--blue); }
   .content, .page { padding: 16px 14px 40px; }
   .hero h2, .page h1 { font-size: 32px; }
   .nav { width: 100%; }
-  .nav button, .nav a { min-width: 0; flex: 1; padding: 8px 6px; font-size: 14px; }
+  .nav button, .nav a { min-width: 0; flex: 1; padding: 8px 6px; font-size: 13px; }
   .toolbar { flex-wrap: wrap; height: auto; min-height: 64px; padding: 8px 12px; }
   .decision-row { grid-template-columns: 1fr; }
   .brand-blurb { max-width: 36rem; }

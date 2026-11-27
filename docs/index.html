@@ -14,7 +14,7 @@
 <body>
   <a class="skip" href="#main">Skip to content</a>
   <div class="app">
-    <aside class="sidebar" aria-label="Alert queue">
+    <aside class="sidebar" aria-label="Case list">
       <div class="brand">
         <div class="mark" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 7h16M4 12h10M4 17h13"/></svg>
@@ -23,7 +23,7 @@
         <p class="brand-role">Alert Triage Assistant</p>
         <p class="brand-blurb">Decides close, RFI or escalate, with cited evidence.</p>
       </div>
-      <input id="search" class="search" type="search" placeholder="Search name or case" aria-label="Search the queue">
+      <input id="search" class="search" type="search" placeholder="Search name or case" aria-label="Search cases">
       <div class="segmented" role="group" aria-label="Institution">
         <button type="button" data-inst="all" aria-pressed="true">All</button>
         <button type="button" data-inst="bank">Bank</button>
@@ -42,7 +42,7 @@
     <div class="workspace">
       <header class="toolbar">
         <nav class="nav" aria-label="Primary">
-          <button type="button" id="tab-case" aria-pressed="true">Queue</button>
+          <button type="button" id="tab-case" aria-pressed="true">Case Analysis</button>
           <button type="button" id="tab-board" aria-pressed="false">Summary</button>
           <button type="button" id="tab-cost" aria-pressed="false">Model cost</button>
         </nav>
@@ -52,7 +52,7 @@
           <button type="button" data-theme="light">Light</button>
           <button type="button" data-theme="dark">Dark</button>
         </div>
-        <button class="tool" id="load-sample" type="button">Sample queue</button>
+        <button class="tool" id="load-sample" type="button">Sample cases</button>
         <label class="tool">Open folder<input id="folder" type="file" webkitdirectory multiple hidden></label>
         <button class="tool" id="export-jsonl" type="button">Export JSONL</button>
         <button class="tool ghost" id="export-csv" type="button">CSV</button>

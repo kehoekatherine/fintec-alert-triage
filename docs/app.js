@@ -1,5 +1,5 @@
 (function () {
-  const state = { items: [], filterInst: "all", filterVerdict: "all", query: "", index: 0, view: "case" };
+  const state = { items: [], filterInst: "all", filterVerdict: "all", query: "", index: 0, view: "case", pendingCaseId: "" };
   const queue = document.getElementById("queue");
   const caseView = document.getElementById("case-view");
   const boardView = document.getElementById("board-view");
@@ -19,7 +19,7 @@
     const rows = visible();
     if (state.index >= rows.length) state.index = Math.max(0, rows.length - 1);
     queue.innerHTML = rows.map((item, i) => `
-      <button class="qrow" role="option" data-i="${i}" aria-current="${i === state.index ? "true" : "false"}">
+      <button class="qrow" role="option" data-i="${i}" aria-selected="${i === state.index ? "true" : "false"}" aria-current="${i === state.index ? "true" : "false"}">
         <strong>${escapeHtml(item.customer.name || item.case.case_id)}</strong>
         ${pill(item.decision.verdict)}
         <small>${escapeHtml(item.case.case_id)} · ${escapeHtml(item.institution)}</small>
@@ -27,25 +27,66 @@
       </button>`).join("") || `<p class="muted" style="padding:12px">No cases in this filter.</p>`;
     queue.querySelectorAll(".qrow").forEach(btn => btn.addEventListener("click", () => {
       state.index = Number(btn.dataset.i);
+      state.pendingCaseId = rows[state.index]?.case?.case_id || "";
+      state.view = "case";
       render();
+      syncUrl(true);
     }));
+  }
+  function revealSelection() {
+    const row = queue.querySelector('[aria-selected="true"]');
+    if (!row) return;
+    const pane = queue.getBoundingClientRect();
+    const box = row.getBoundingClientRect();
+    if (box.top < pane.top) queue.scrollTop -= pane.top - box.top;
+    else if (box.bottom > pane.bottom) queue.scrollTop += box.bottom - pane.bottom;
+  }
+  function applyPendingCase() {
+    if (!state.pendingCaseId) return;
+    const rows = visible();
+    const index = rows.findIndex(item => item.case.case_id === state.pendingCaseId);
+    if (index >= 0) state.index = index;
   }
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
   }
   function current() { return visible()[state.index]; }
-  const ABOUT = "Reviews transaction-monitoring alerts against each firm's policy and decides, consistently and with cited evidence, whether to close, request information or escalate to the MLRO. Built for AML analysts and compliance teams at banks, payment and FX firms, e-money providers and investment platforms.";
-  function aboutBlock() {
-    return `<section class="about">
-      <h2>ClearPath AML</h2>
-      <p class="brand-role">Alert Triage Assistant</p>
-      <p>${ABOUT}</p>
+  function overviewBlock() {
+    return `<section class="about overview">
+      <p class="brand-role">ClearPath AML</p>
+      <h2>Alert Triage Assistant</h2>
+      <p>AML means Anti-Money Laundering. ClearPath reads a transaction-monitoring alert against that firm's own policy and decides, the same way each time, whether to close it, ask for information, or escalate it to the MLRO. The reason cites the document, transaction or list entry it used. It is for AML analysts and compliance teams at banks, payment and FX firms, e-money providers and investment platforms.</p>
+      <h3>How to use it</h3>
+      <ol>
+        <li>Open Case Analysis. The sample cases load on their own. To use another firm, choose Open folder and pick a folder that contains cases.jsonl.</li>
+        <li>Click a case in the list. The row stays highlighted, including when you come from Summary or Model cost, and when you use the address bar or the back button.</li>
+        <li>Read the statement, the reason and the next action before you do anything else.</li>
+        <li>Summary counts the verdicts in the list you are looking at. Model cost is where the prices and the model comparison live.</li>
+      </ol>
+      <h3>How to read a case</h3>
+      <ul>
+        <li><strong>Statement.</strong> Rows run from oldest to newest, like a bank statement. Money in, in green, is a credit, deposit, top-up or funding receipt. Money out, in red, is a debit, withdrawal, card spend or payment sent. There is no running balance, because the file has no opening balance. A marker on a row means it is on an alert, or the decision cites it.</li>
+        <li><strong>CLOSE.</strong> The activity is explained. There is nothing further to do. At the payments firm, the next action also says whether a held payment can be released.</li>
+        <li><strong>RFI.</strong> Request for information. Ask for the document or detail named in the next action. Do this only when nothing in the case already looks like a crime.</li>
+        <li><strong>ESCALATE.</strong> Send the case to the money-laundering reporting officer. Do not contact the customer about the activity. Once there is a sign of suspicion, the decision is escalate, not an RFI. Asking the customer would tip them off.</li>
+        <li><strong>Reason code.</strong> The short policy label for why, such as a documented event or a list match that is a different person.</li>
+        <li><strong>Evidence IDs.</strong> The document, transaction or list entry the decision relied on. In the case they link to that document.</li>
+      </ul>
+      <h3>Summary</h3>
+      <p>The counts are the close, RFI and escalate cases in the list on screen, after your search and filters. They are not an official score, and they are not the hand-labelled sample.</p>
+      <h3>Model cost</h3>
+      <ul>
+        <li><strong>Fitness</strong> is how much of the cost of escalating every case the system avoids. A wrongful close costs 10, so fitness matters more than a raw accuracy percentage.</li>
+        <li><strong>Unsafe clearance</strong> is closing a case that should have been an RFI or an escalation.</li>
+        <li><strong>Language-model prices</strong> are published token rates. Llama 3.3 70B is open weight, priced here as Groq's hosted service. DeepSeek V4.1 Flash is DeepSeek's hosted API price, read 27 Nov 2026, not a self-hosted GPU bill. No language model was run on these cases, so those accuracy cells stay empty.</li>
+        <li><strong>Classical models</strong> are logistic regression, a decision tree, naive Bayes, nearest neighbours and a small neural network. They were trained to copy the rules engine, because the case files have no official labels. The rules engine is the one to use: on the 28 hand labels it scores fitness 100 with no unsafe close, it cites the evidence, and it does not vary. The nearest-neighbour model is 24 fitness points lower and has one unsafe close. Copying the engine is not an independent test of the policy.</li>
+      </ul>
     </section>`;
   }
   function renderCase() {
     const item = current();
     if (!item) {
-      caseView.innerHTML = `${aboutBlock()}<p class="muted">Load the sample queue or open an institution folder.</p>`;
+      caseView.innerHTML = `${overviewBlock()}<p class="muted">Choose Sample cases, or open an institution folder that contains cases.jsonl.</p>`;
       return;
     }
     const ev = new Set(item.decision.evidence || []);
@@ -166,8 +207,8 @@
     rows.forEach(item => { counts[item.decision.verdict] = (counts[item.decision.verdict] || 0) + 1; });
     const n = rows.length || 1;
     boardView.innerHTML = `
-      ${aboutBlock()}
-      <h2>This queue</h2>
+      ${overviewBlock()}
+      <h2>Cases on screen</h2>
       <p class="muted">Verdict mix for the cases on screen. The official cost score needs labels; the hand-labelled sample is on the model-cost page.</p>
       <div class="stats">
         <div class="stat"><b>${rows.length}</b><span class="muted">Cases</span></div>
@@ -191,10 +232,37 @@
     document.getElementById("tab-cost").setAttribute("aria-pressed", state.view === "cost" ? "true" : "false");
   }
   function render() {
+    applyPendingCase();
     renderQueue();
     showView();
     if (state.view === "board") renderBoard();
     else if (state.view === "case") renderCase();
+    revealSelection();
+  }
+  function viewParam() {
+    if (state.view === "board") return "summary";
+    if (state.view === "cost") return "cost";
+    return "analysis";
+  }
+  function syncUrl(push) {
+    const params = new URLSearchParams(location.search);
+    params.delete("shot");
+    params.set("view", viewParam());
+    const id = current()?.case?.case_id || "";
+    if (id) params.set("case", id);
+    else params.delete("case");
+    const next = `${location.pathname}?${params.toString()}${location.hash}`;
+    const data = { view: state.view, caseId: id };
+    if (push) history.pushState(data, "", next);
+    else history.replaceState(data, "", next);
+  }
+  function applyLocation() {
+    const params = new URLSearchParams(location.search);
+    const view = params.get("view");
+    if (view === "summary") state.view = "board";
+    else if (view === "cost") state.view = "cost";
+    else if (view === "analysis" || view === "case" || view === "queue") state.view = "case";
+    state.pendingCaseId = params.get("case") || state.pendingCaseId || "";
   }
   function addItems(list) { state.items = list; state.index = 0; render(); }
   async function loadSample() {
@@ -297,20 +365,36 @@
   document.getElementById("folder").addEventListener("change", event => loadFolder(event.target.files));
   document.getElementById("export-jsonl").addEventListener("click", exportJsonl);
   document.getElementById("export-csv").addEventListener("click", exportCsv);
-  document.getElementById("search").addEventListener("input", event => { state.query = event.target.value; state.index = 0; render(); });
-  document.querySelectorAll("[data-inst]").forEach(btn => btn.addEventListener("click", () => {
-    state.filterInst = btn.dataset.inst; state.index = 0;
-    document.querySelectorAll("[data-inst]").forEach(el => el.setAttribute("aria-pressed", el === btn ? "true" : "false"));
+  function keepSelection() {
+    const index = visible().findIndex(item => item.case.case_id === state.pendingCaseId);
+    state.index = index >= 0 ? index : 0;
+  }
+  document.getElementById("search").addEventListener("input", event => {
+    state.pendingCaseId = current()?.case?.case_id || state.pendingCaseId;
+    state.query = event.target.value;
+    keepSelection();
     render();
+    syncUrl(false);
+  });
+  document.querySelectorAll("[data-inst]").forEach(btn => btn.addEventListener("click", () => {
+    state.pendingCaseId = current()?.case?.case_id || state.pendingCaseId;
+    state.filterInst = btn.dataset.inst;
+    document.querySelectorAll("[data-inst]").forEach(el => el.setAttribute("aria-pressed", el === btn ? "true" : "false"));
+    keepSelection();
+    render();
+    syncUrl(true);
   }));
   document.querySelectorAll("[data-verdict]").forEach(btn => btn.addEventListener("click", () => {
-    state.filterVerdict = btn.dataset.verdict; state.index = 0;
+    state.pendingCaseId = current()?.case?.case_id || state.pendingCaseId;
+    state.filterVerdict = btn.dataset.verdict;
     document.querySelectorAll("[data-verdict]").forEach(el => el.setAttribute("aria-pressed", el === btn ? "true" : "false"));
+    keepSelection();
     render();
+    syncUrl(true);
   }));
-  document.getElementById("tab-case").addEventListener("click", () => { state.view = "case"; render(); });
-  document.getElementById("tab-board").addEventListener("click", () => { state.view = "board"; render(); });
-  document.getElementById("tab-cost").addEventListener("click", () => { state.view = "cost"; render(); });
+  document.getElementById("tab-case").addEventListener("click", () => { state.view = "case"; render(); syncUrl(true); });
+  document.getElementById("tab-board").addEventListener("click", () => { state.view = "board"; render(); syncUrl(true); });
+  document.getElementById("tab-cost").addEventListener("click", () => { state.view = "cost"; render(); syncUrl(true); });
   document.querySelectorAll("[data-theme]").forEach(btn => btn.addEventListener("click", () => {
     const theme = btn.dataset.theme;
     if (theme === "system") document.documentElement.removeAttribute("data-theme");
@@ -319,24 +403,27 @@
   }));
   queue.addEventListener("keydown", event => {
     const rows = visible();
-    if (event.key === "ArrowDown") { state.index = Math.min(rows.length - 1, state.index + 1); render(); event.preventDefault(); }
-    if (event.key === "ArrowUp") { state.index = Math.max(0, state.index - 1); render(); event.preventDefault(); }
+    if (event.key === "ArrowDown") { state.index = Math.min(rows.length - 1, state.index + 1); state.pendingCaseId = rows[state.index]?.case?.case_id || ""; state.view = "case"; render(); syncUrl(true); event.preventDefault(); }
+    if (event.key === "ArrowUp") { state.index = Math.max(0, state.index - 1); state.pendingCaseId = rows[state.index]?.case?.case_id || ""; state.view = "case"; render(); syncUrl(true); event.preventDefault(); }
   });
   const params = new URLSearchParams(location.search);
   if (params.get("theme") === "dark" || params.get("theme") === "light") {
     document.documentElement.setAttribute("data-theme", params.get("theme"));
   }
   if (params.get("verdict")) state.filterVerdict = params.get("verdict");
-  if (params.get("view") === "summary") state.view = "board";
-  if (params.get("view") === "cost" || params.get("shot") === "tradeoffs" || params.get("shot") === "charts") state.view = "cost";
+  if (params.get("shot") === "tradeoffs" || params.get("shot") === "charts") state.view = "cost";
+  applyLocation();
+  window.addEventListener("popstate", () => { applyLocation(); render(); });
   loadSample().then(() => {
     if (params.get("verdict")) {
       document.querySelectorAll("[data-verdict]").forEach(el => el.setAttribute("aria-pressed", el.dataset.verdict === params.get("verdict") ? "true" : "false"));
     }
     render();
+    syncUrl(false);
     const shot = params.get("shot");
     const shotNode = shot === "tradeoffs" ? document.getElementById("tradeoffs")
-      : shot === "charts" ? document.getElementById("cost-chart") : null;
+      : shot === "charts" ? document.getElementById("cost-chart")
+      : shot === "overview" ? document.querySelector(".overview") : null;
     if (shotNode) shotNode.scrollIntoView({ block: "start" });
-  }).catch(err => { caseView.innerHTML = `<p>Could not load the sample queue (${escapeHtml(err.message)}).</p>`; });
+  }).catch(err => { caseView.innerHTML = `<p>Could not load the sample cases (${escapeHtml(err.message)}).</p>`; });
 })();

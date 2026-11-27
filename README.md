@@ -1,14 +1,40 @@
 # ClearPath AML
 
-**Alert Triage Assistant.** Reviews transaction-monitoring alerts against each firm's policy and decides, consistently and with cited evidence, whether to close, request information or escalate to the MLRO. Built for AML analysts and compliance teams at banks, payment and FX firms, e-money providers and investment platforms.
+**Alert Triage Assistant.** AML means Anti-Money Laundering. ClearPath reviews transaction-monitoring alerts against each firm's policy and decides, consistently and with cited evidence, whether to close, request information or escalate to the MLRO. Built for AML analysts and compliance teams at banks, payment and FX firms, e-money providers and investment platforms.
 
 It reads a folder of UK transaction-monitoring alerts and writes one verdict for every case: **CLOSE**, **RFI** or **ESCALATE**, with a reason code, a reason that names the case's own facts, and the document, transaction or list ids it relied on. The repository name stays `fintec-alert-triage`.
 
 The development data for the [TM hackathon](https://hosted-pages.godiligent.ai/hackathon-tm-track/) is in `institutions/`. `BRIEF.html` is the brief. Amounts are in pounds.
 
-Browser app, if GitHub Pages is enabled: <https://kehoekatherine.github.io/fintec-alert-triage/>
+Live app:
 
-The queue is the case reviewer. [Model cost](docs/dashboard.html) is a second page: what it would cost to send the same cases through four published model APIs, next to this rules engine.
+- Case Analysis: <https://kehoekatherine.github.io/fintec-alert-triage/?view=analysis>
+- Summary, including the operator overview: <https://kehoekatherine.github.io/fintec-alert-triage/?view=summary>
+- Model cost: <https://kehoekatherine.github.io/fintec-alert-triage/?view=cost>
+
+Case Analysis is the case reviewer. The same shell holds Summary and Model cost, so the title and the tab bar do not move when you switch. Clicking a case from either of those views opens it and highlights that row. The address keeps the view and the case id, so a link, the back button and the forward button land on the same case.
+
+## Operator guide
+
+AML is the work of spotting money laundering and reporting it. ClearPath does the first read of an alert so an analyst can see the decision, the reason and the evidence before they act.
+
+1. Open Case Analysis. The sample cases load on their own. For another firm, choose Open folder and pick a directory that contains `cases.jsonl`.
+2. Click a case. The list row stays highlighted and scrolls into view.
+3. Read the statement, then Why, then Next action.
+4. Use Summary for the mix of verdicts in the list you are looking at. The overview at the top of Summary is the same guide as this section.
+5. Use Model cost for token prices and for the classical-model comparison.
+
+How to read a case:
+
+- The statement is oldest first. Money in is a credit, deposit, top-up or funding receipt. Money out is a debit, withdrawal, card spend or payment sent. A marker means the row is on an alert or is cited as evidence. There is no running balance.
+- **CLOSE** means the activity is explained. Nothing further is required. At the payments firm the next action also says whether a held payment can be released.
+- **RFI** means request for information. Ask for the document or detail named in the next action. Use this only when the case does not already show a sign of crime.
+- **ESCALATE** means send the case to the MLRO and do not contact the customer. Once there is suspicion, the rules escalate rather than ask. Asking would tip the customer off.
+- The reason code is the policy label. The evidence ids are the document, transaction or list entry the decision used.
+
+Summary counts are only the cases on screen. They are not an official score.
+
+Model cost: fitness is the share of the escalate-everything cost the system avoids, using the brief's matrix. A wrongful close costs 10. Unsafe clearance is closing a case that should have been an RFI or an escalation. Language-model accuracy on these cases was not measured. The classical comparison is below.
 
 ## Run the scored system
 
@@ -43,7 +69,7 @@ A run of 1,000 cases takes about a second after the files are read, and about 0.
 python3 -m http.server 8000 --directory docs
 ```
 
-Open <http://127.0.0.1:8000/>. The sample queue is a stratified slice of the real development cases, with verdicts from this rules engine. **Model cost** is `dashboard.html`. To load another institution folder, use **Open folder** and choose a directory that contains `cases.jsonl`. That path runs the browser port in `docs/engine.js`. The scored file is always `system/run`; the browser port follows the same severity order and is not a line-for-line copy.
+Open <http://127.0.0.1:8000/>. Case Analysis loads a stratified slice of the real development cases, with verdicts from this rules engine. Summary and Model cost are the other two tabs. `dashboard.html` redirects to Model cost. To load another institution folder, use **Open folder** and choose a directory that contains `cases.jsonl`. That path runs the browser port in `docs/engine.js`. The scored file is always `system/run`; the browser port follows the same severity order and is not a line-for-line copy.
 
 ## Architecture
 
@@ -163,14 +189,29 @@ Llama and DeepSeek are open-weight models priced here as hosted APIs. Neither fi
 
 ## Classical models
 
-`analysis/ml_compare.py` trains logistic regression, a decision tree, Gaussian naive Bayes, 15-nearest neighbours and a one-layer network on features of the 4,000 development cases. The features are amounts, counts, in/out ratios, near-threshold counts, counterparty and list-name flags, alert ids and institution. The training labels are the rules engine's own verdicts. There is no official label file. The 28 hand labels agree with the engine, so a score against them is not an independent test.
+`analysis/ml_compare.py` trains logistic regression, a decision tree, Gaussian naive Bayes, 15-nearest neighbours and a one-layer network on features of the 4,000 development cases. The features are amounts, counts, in/out ratios, near-threshold counts, counterparty and list-name flags, alert ids and institution. The training labels are the rules engine's own verdicts. The script writes `docs/data/ml_comparison.json`, which the Model cost view reads. Stratified 5-fold cross-validation uses seed 7. Fitness is the brief's cost matrix. A wrongful close costs 10, so fitness, not raw accuracy, decides the ranking.
+
+There is no official label file. The models are trained on the rules engine's own verdicts, then scored on the 28 hand labels. Those 28 agree with the engine, so the hand-label score is not an independent test. Cross-validation measures how well a model copies the policy from amounts, counts, ratios, alert ids and name flags. It does not read the evidence wording.
+
+Hand-label results from the published `docs/data/ml_comparison.json` run:
+
+| Model | Accuracy | Macro F1 | Fitness | Unsafe closes |
+|---|---:|---:|---:|---:|
+| Rules engine | 100% | 100% | 100 | 0 |
+| Logistic regression | 82.1% | 80.7% | 59.26 | 1 |
+| Decision tree | 85.7% | 85.2% | 51.85 | 2 |
+| Gaussian naive Bayes | 53.6% | 52.4% | 27.78 | 0 |
+| K-nearest neighbours | 92.9% | 94.2% | 75.93 | 1 |
+| Neural network (MLP) | 89.3% | 91.5% | 70.37 | 1 |
+
+The rules engine is the chosen model. It has the highest fitness and no unsafe close, it cites the evidence id, and it does not vary between runs. K-nearest neighbours is next, 24.07 fitness points lower, with one unsafe close. Naive Bayes also has no unsafe close on these 28 cases because it rarely closes: 11 true closes are sent back as an RFI or an escalation, and its fitness is 27.78. Among the models trained to copy the policy, the network has the highest cross-validated fitness, 72.88 ± 6.55, still 27.12 points short of a perfect copy.
+
+Rerun from the repository root:
 
 ```bash
 python3 -m pip install scikit-learn
 python3 analysis/ml_compare.py
 ```
-
-The script writes `docs/data/ml_comparison.json`. The Model cost view reads that file. Stratified 5-fold cross-validation uses seed 7. Fitness is the brief's cost matrix. A wrongful close costs 10, so fitness, not raw accuracy, decides the ranking. On the hand labels the rules engine is fitness 100 with no unsafe close, because it is the policy those labels were checked against.
 
 ## Tests
 
@@ -188,23 +229,17 @@ PYTHONPATH=. python3 scripts/build_site_data.py
 
 ## Screenshots
 
-Wide desktop and a phone-width view, light and dark. The case page is a statement plus a next-action card. `action` is an extra field on each output line, after the fields the harness requires.
+Taken from the live site after the Case Analysis rename. The first shot is a case opened from Summary, with that row highlighted.
 
-![Queue, light, wide](docs/screenshots/queue-light.png)
+![Case Analysis, reached from Summary, light, wide](docs/screenshots/live-analysis-from-summary-wide-light.png)
 
-![Queue, dark, wide](docs/screenshots/queue-dark.png)
+![Overview on Summary, light, wide](docs/screenshots/live-overview-wide-light.png)
 
-![Queue, light, phone](docs/screenshots/queue-light-mobile.png)
+![Overview, light, phone](docs/screenshots/live-overview-mobile-light.png)
 
-![Queue, dark, phone](docs/screenshots/queue-dark-mobile.png)
+![Model cost charts, light, wide](docs/screenshots/live-cost-charts-wide-light.png)
 
-![Model cost, light](docs/screenshots/cost-light.png)
-
-![Model cost, dark](docs/screenshots/cost-dark.png)
-
-![Model cost, light, phone](docs/screenshots/cost-light-mobile.png)
-
-![Model cost, dark, phone](docs/screenshots/cost-dark-mobile.png)
+![Classical comparison, light, wide](docs/screenshots/live-cost-ml-wide-light.png)
 
 ## Pages
 
