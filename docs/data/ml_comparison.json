@@ -1,0 +1,3267 @@
+{
+  "seed": 7,
+  "folds": 5,
+  "n_cases": 4000,
+  "n_features": 43,
+  "feature_names": [
+    "inst_bank",
+    "inst_emoney",
+    "inst_investment",
+    "inst_payments_fx",
+    "is_business",
+    "risk_medium",
+    "log_monthly_capacity",
+    "held_payment",
+    "n_alerts",
+    "n_reviews",
+    "n_documents",
+    "window_days",
+    "n_tx",
+    "n_in",
+    "n_out",
+    "log_sum_in",
+    "log_sum_out",
+    "log_max",
+    "out_in_ratio",
+    "n_counterparties",
+    "n_countries",
+    "n_cash",
+    "log_cash",
+    "n_high_risk",
+    "n_undeclared_high_risk",
+    "n_near_threshold",
+    "listed_counterparty",
+    "listed_customer",
+    "doc_invoice",
+    "doc_statement",
+    "doc_letter",
+    "doc_register",
+    "inflow_over_capacity",
+    "alert_TM01",
+    "alert_TM02",
+    "alert_TM03",
+    "alert_TM04",
+    "alert_TM05",
+    "alert_TM06",
+    "alert_TM07",
+    "alert_TM08",
+    "alert_TM10",
+    "alert_TM22"
+  ],
+  "class_counts_rules_labels": {
+    "CLOSE": 1856,
+    "RFI": 704,
+    "ESCALATE": 1440
+  },
+  "label_source": {
+    "official_labels": false,
+    "training_labels": "Rules-engine verdicts in output/*.jsonl, produced by triage/engine.py from each firm's POLICY.md.",
+    "hand_labels": "docs/data/hand_labels.json, 28 cases read against POLICY.md.",
+    "hand_labels_matching_engine": 28,
+    "hand_label_count": 28,
+    "circular": true
+  },
+  "definitions": {
+    "fitness": "100 times the share of the escalate-everything cost the system avoids. The cost matrix is CLOSE/RFI/ESCALATE as in triage/score.py.",
+    "unsafe_clearance": "A true RFI or ESCALATE predicted as CLOSE. Count and rate use the non-close cases as the denominator.",
+    "over_caution": "A true CLOSE predicted as RFI or ESCALATE.",
+    "tipping_off": "A true ESCALATE predicted as RFI. The rules engine's own action text tells the analyst not to contact the customer; a classical model does not produce that warning.",
+    "overfit_gap": "Train-fold score minus held-out fold score. Positive means the training fold looked better than the cases it did not fit.",
+    "cited_evidence": "Whether the system names a document, transaction or list id. Classical models do not."
+  },
+  "caveats": [
+    "There is no official label file in the starter kit. Do not read these figures as the hackathon score on the 800 unseen cases.",
+    "Cross-validation trains and tests on the rules engine's own verdicts. A perfect score would mean the model reproduced the policy, not that the policy is correct.",
+    "The 28 hand labels agree with the engine on 28 of 28 cases. Scoring a model against them, after training it to copy the engine, is not an independent test.",
+    "Features are amounts, counts, ratios, alert ids, institution, and name flags. They do not include the wording of the evidence documents, which is what the rules engine reads before it closes a case.",
+    "Fold intervals use the five fold scores and a Student t critical value. They are not a confidence interval for a new customer.",
+    "Latency for the classical models is this machine's predict time. The rules-engine latency is the figure already measured in docs/data/payload_stats.json. Neither includes a network call.",
+    "Marginal token cost of every classical model and of the rules engine is \u00a30. That is not a claim about analyst time."
+  ],
+  "rules_engine": {
+    "id": "rules",
+    "label": "Rules engine",
+    "explainability": "The verdict is a written rule from the firm's policy. The output cites the document, transaction or list id it used.",
+    "cites_evidence": true,
+    "deterministic": true,
+    "marginal_cost_gbp": 0,
+    "predict_seconds_per_case_measured": 0.000341,
+    "hand": {
+      "n": 28,
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "per_class": {
+        "CLOSE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 16
+        },
+        "RFI": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 3
+        },
+        "ESCALATE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 9
+        }
+      },
+      "confusion_matrix": {
+        "rows": [
+          "CLOSE",
+          "RFI",
+          "ESCALATE"
+        ],
+        "columns": [
+          "CLOSE",
+          "RFI",
+          "ESCALATE"
+        ],
+        "counts": [
+          [
+            16,
+            0,
+            0
+          ],
+          [
+            0,
+            3,
+            0
+          ],
+          [
+            0,
+            0,
+            9
+          ]
+        ]
+      },
+      "cost": 0,
+      "escalate_all_cost": 54,
+      "fitness": 100.0,
+      "unsafe_clearance_count": 0,
+      "unsafe_clearance_rate": 0.0,
+      "over_caution_count": 0,
+      "over_caution_rate": 0.0,
+      "tipping_off_count": 0,
+      "tipping_off_rate": 0.0
+    },
+    "cv": null,
+    "cv_note": "The rules engine is the source of the training labels. Scoring it against those labels would be exactly 100 with zero variance. That figure is not reported as a cross-validated accuracy."
+  },
+  "models": [
+    {
+      "id": "logreg",
+      "label": "Logistic regression",
+      "explainability": "Coefficients on scaled features. A regulator can read the direction of a feature, not the case narrative.",
+      "cites_evidence": false,
+      "deterministic": false,
+      "cv": {
+        "pooled": {
+          "n": 4000,
+          "accuracy": 0.847,
+          "macro_f1": 0.8468,
+          "per_class": {
+            "CLOSE": {
+              "precision": 0.9347,
+              "recall": 0.7322,
+              "f1": 0.8211,
+              "support": 1856
+            },
+            "RFI": {
+              "precision": 0.758,
+              "recall": 0.9474,
+              "f1": 0.8422,
+              "support": 704
+            },
+            "ESCALATE": {
+              "precision": 0.8175,
+              "recall": 0.9458,
+              "f1": 0.877,
+              "support": 1440
+            }
+          },
+          "confusion_matrix": {
+            "rows": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "columns": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "counts": [
+              [
+                1359,
+                197,
+                300
+              ],
+              [
+                33,
+                667,
+                4
+              ],
+              [
+                62,
+                16,
+                1362
+              ]
+            ]
+          },
+          "cost": 2497,
+          "escalate_all_cost": 6976,
+          "fitness": 64.21,
+          "unsafe_clearance_count": 95,
+          "unsafe_clearance_rate": 0.0443,
+          "over_caution_count": 497,
+          "over_caution_rate": 0.2678,
+          "tipping_off_count": 16,
+          "tipping_off_rate": 0.0111
+        },
+        "fitness": {
+          "mean": 64.206,
+          "fold_std": 5.5538,
+          "folds": [
+            55.01,
+            64.01,
+            65.3,
+            69.61,
+            67.1
+          ],
+          "interval_95": [
+            57.31,
+            71.102
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "accuracy": {
+          "mean": 0.847,
+          "fold_std": 0.0138,
+          "folds": [
+            0.8225,
+            0.855,
+            0.8538,
+            0.8512,
+            0.8525
+          ],
+          "interval_95": [
+            0.8299,
+            0.8641
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "macro_f1": {
+          "mean": 0.847,
+          "fold_std": 0.0148,
+          "folds": [
+            0.821,
+            0.8534,
+            0.856,
+            0.8553,
+            0.8493
+          ],
+          "interval_95": [
+            0.8287,
+            0.8653
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "unsafe_clearance_rate": {
+          "mean": 0.0443,
+          "fold_std": 0.0168,
+          "folds": [
+            0.0678,
+            0.0513,
+            0.0443,
+            0.0233,
+            0.035
+          ],
+          "interval_95": [
+            0.0235,
+            0.0652
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "overfit_fitness_gap": {
+          "mean": 2.874,
+          "fold_std": 5.8923,
+          "folds": [
+            10.31,
+            0.91,
+            7.82,
+            -3.04,
+            -1.63
+          ],
+          "interval_95": [
+            -4.4422,
+            10.1902
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "predict_seconds_per_case": {
+          "mean": 5.2e-07,
+          "fold_std": 6e-08,
+          "folds": [
+            6.1e-07,
+            5.2e-07,
+            4.9e-07,
+            4.8e-07,
+            4.8e-07
+          ],
+          "interval_95": [
+            4.5e-07,
+            5.8e-07
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "folds": [
+          {
+            "fold": 1,
+            "n_test": 800,
+            "fit_seconds": 0.0549,
+            "predict_seconds": 0.000491,
+            "predict_seconds_per_case": 6.1e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8225,
+              "macro_f1": 0.821,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9007,
+                  "recall": 0.707,
+                  "f1": 0.7922,
+                  "support": 372
+                },
+                "RFI": {
+                  "precision": 0.7,
+                  "recall": 0.95,
+                  "f1": 0.8061,
+                  "support": 140
+                },
+                "ESCALATE": {
+                  "precision": 0.8239,
+                  "recall": 0.9097,
+                  "f1": 0.8647,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    263,
+                    54,
+                    55
+                  ],
+                  [
+                    6,
+                    133,
+                    1
+                  ],
+                  [
+                    23,
+                    3,
+                    262
+                  ]
+                ]
+              },
+              "cost": 628,
+              "escalate_all_cost": 1396,
+              "fitness": 55.01,
+              "unsafe_clearance_count": 29,
+              "unsafe_clearance_rate": 0.0678,
+              "over_caution_count": 109,
+              "over_caution_rate": 0.293,
+              "tipping_off_count": 3,
+              "tipping_off_rate": 0.0104
+            },
+            "train_accuracy": 0.85,
+            "train_fitness": 65.32,
+            "overfit_accuracy_gap": 0.0275,
+            "overfit_fitness_gap": 10.31
+          },
+          {
+            "fold": 2,
+            "n_test": 800,
+            "fit_seconds": 0.0494,
+            "predict_seconds": 0.000419,
+            "predict_seconds_per_case": 5.2e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.855,
+              "macro_f1": 0.8534,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9276,
+                  "recall": 0.7601,
+                  "f1": 0.8356,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.7738,
+                  "recall": 0.922,
+                  "f1": 0.8414,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.8293,
+                  "recall": 0.9444,
+                  "f1": 0.8831,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    282,
+                    33,
+                    56
+                  ],
+                  [
+                    11,
+                    130,
+                    0
+                  ],
+                  [
+                    11,
+                    5,
+                    272
+                  ]
+                ]
+              },
+              "cost": 502,
+              "escalate_all_cost": 1395,
+              "fitness": 64.01,
+              "unsafe_clearance_count": 22,
+              "unsafe_clearance_rate": 0.0513,
+              "over_caution_count": 89,
+              "over_caution_rate": 0.2399,
+              "tipping_off_count": 5,
+              "tipping_off_rate": 0.0174
+            },
+            "train_accuracy": 0.8541,
+            "train_fitness": 64.92,
+            "overfit_accuracy_gap": -0.0009,
+            "overfit_fitness_gap": 0.91
+          },
+          {
+            "fold": 3,
+            "n_test": 800,
+            "fit_seconds": 0.0517,
+            "predict_seconds": 0.000393,
+            "predict_seconds_per_case": 4.9e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8538,
+              "macro_f1": 0.856,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9354,
+                  "recall": 0.7412,
+                  "f1": 0.8271,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.7964,
+                  "recall": 0.9433,
+                  "f1": 0.8636,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.8112,
+                  "recall": 0.9549,
+                  "f1": 0.8772,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    275,
+                    32,
+                    64
+                  ],
+                  [
+                    8,
+                    133,
+                    0
+                  ],
+                  [
+                    11,
+                    2,
+                    275
+                  ]
+                ]
+              },
+              "cost": 484,
+              "escalate_all_cost": 1395,
+              "fitness": 65.3,
+              "unsafe_clearance_count": 19,
+              "unsafe_clearance_rate": 0.0443,
+              "over_caution_count": 96,
+              "over_caution_rate": 0.2588,
+              "tipping_off_count": 2,
+              "tipping_off_rate": 0.0069
+            },
+            "train_accuracy": 0.8806,
+            "train_fitness": 73.12,
+            "overfit_accuracy_gap": 0.0268,
+            "overfit_fitness_gap": 7.82
+          },
+          {
+            "fold": 4,
+            "n_test": 800,
+            "fit_seconds": 0.0529,
+            "predict_seconds": 0.000385,
+            "predict_seconds_per_case": 4.8e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8512,
+              "macro_f1": 0.8553,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9636,
+                  "recall": 0.7143,
+                  "f1": 0.8204,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.8,
+                  "recall": 0.9645,
+                  "f1": 0.8746,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.7887,
+                  "recall": 0.9722,
+                  "f1": 0.8709,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    265,
+                    34,
+                    72
+                  ],
+                  [
+                    2,
+                    136,
+                    3
+                  ],
+                  [
+                    8,
+                    0,
+                    280
+                  ]
+                ]
+              },
+              "cost": 424,
+              "escalate_all_cost": 1395,
+              "fitness": 69.61,
+              "unsafe_clearance_count": 10,
+              "unsafe_clearance_rate": 0.0233,
+              "over_caution_count": 106,
+              "over_caution_rate": 0.2857,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.8522,
+            "train_fitness": 66.57,
+            "overfit_accuracy_gap": 0.001,
+            "overfit_fitness_gap": -3.04
+          },
+          {
+            "fold": 5,
+            "n_test": 800,
+            "fit_seconds": 0.0499,
+            "predict_seconds": 0.000387,
+            "predict_seconds_per_case": 4.8e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8525,
+              "macro_f1": 0.8493,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9481,
+                  "recall": 0.7385,
+                  "f1": 0.8303,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.7297,
+                  "recall": 0.9574,
+                  "f1": 0.8282,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.8374,
+                  "recall": 0.9479,
+                  "f1": 0.8893,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    274,
+                    44,
+                    53
+                  ],
+                  [
+                    6,
+                    135,
+                    0
+                  ],
+                  [
+                    9,
+                    6,
+                    273
+                  ]
+                ]
+              },
+              "cost": 459,
+              "escalate_all_cost": 1395,
+              "fitness": 67.1,
+              "unsafe_clearance_count": 15,
+              "unsafe_clearance_rate": 0.035,
+              "over_caution_count": 97,
+              "over_caution_rate": 0.2615,
+              "tipping_off_count": 6,
+              "tipping_off_rate": 0.0208
+            },
+            "train_accuracy": 0.85,
+            "train_fitness": 65.47,
+            "overfit_accuracy_gap": -0.0025,
+            "overfit_fitness_gap": -1.63
+          }
+        ]
+      },
+      "hand": {
+        "n": 28,
+        "accuracy": 0.8214,
+        "macro_f1": 0.8066,
+        "per_class": {
+          "CLOSE": {
+            "precision": 0.9231,
+            "recall": 0.75,
+            "f1": 0.8276,
+            "support": 16
+          },
+          "RFI": {
+            "precision": 0.6,
+            "recall": 1.0,
+            "f1": 0.75,
+            "support": 3
+          },
+          "ESCALATE": {
+            "precision": 0.8,
+            "recall": 0.8889,
+            "f1": 0.8421,
+            "support": 9
+          }
+        },
+        "confusion_matrix": {
+          "rows": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "columns": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "counts": [
+            [
+              12,
+              2,
+              2
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              1,
+              0,
+              8
+            ]
+          ]
+        },
+        "cost": 22,
+        "escalate_all_cost": 54,
+        "fitness": 59.26,
+        "unsafe_clearance_count": 1,
+        "unsafe_clearance_rate": 0.0833,
+        "over_caution_count": 4,
+        "over_caution_rate": 0.25,
+        "tipping_off_count": 0,
+        "tipping_off_rate": 0.0,
+        "trained_on": 3972,
+        "fit_seconds": 0.0701,
+        "predict_seconds_per_case": 1.1e-05
+      },
+      "marginal_cost_gbp": 0
+    },
+    {
+      "id": "tree",
+      "label": "Decision tree",
+      "explainability": "A short list of feature splits. Readable, but the splits are not the policy text and they do not cite a document.",
+      "cites_evidence": false,
+      "deterministic": false,
+      "cv": {
+        "pooled": {
+          "n": 4000,
+          "accuracy": 0.8395,
+          "macro_f1": 0.8426,
+          "per_class": {
+            "CLOSE": {
+              "precision": 0.889,
+              "recall": 0.7726,
+              "f1": 0.8268,
+              "support": 1856
+            },
+            "RFI": {
+              "precision": 0.7714,
+              "recall": 0.9588,
+              "f1": 0.855,
+              "support": 704
+            },
+            "ESCALATE": {
+              "precision": 0.8261,
+              "recall": 0.8674,
+              "f1": 0.8462,
+              "support": 1440
+            }
+          },
+          "confusion_matrix": {
+            "rows": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "columns": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "counts": [
+              [
+                1434,
+                168,
+                254
+              ],
+              [
+                20,
+                675,
+                9
+              ],
+              [
+                159,
+                32,
+                1249
+              ]
+            ]
+          },
+          "cost": 3170,
+          "escalate_all_cost": 6976,
+          "fitness": 54.56,
+          "unsafe_clearance_count": 179,
+          "unsafe_clearance_rate": 0.0835,
+          "over_caution_count": 422,
+          "over_caution_rate": 0.2274,
+          "tipping_off_count": 32,
+          "tipping_off_rate": 0.0222
+        },
+        "fitness": {
+          "mean": 54.558,
+          "fold_std": 5.0215,
+          "folds": [
+            58.74,
+            58.06,
+            50.25,
+            48.03,
+            57.71
+          ],
+          "interval_95": [
+            48.323,
+            60.793
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "accuracy": {
+          "mean": 0.8395,
+          "fold_std": 0.0259,
+          "folds": [
+            0.8588,
+            0.8013,
+            0.8562,
+            0.8575,
+            0.8237
+          ],
+          "interval_95": [
+            0.8073,
+            0.8717
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "macro_f1": {
+          "mean": 0.8426,
+          "fold_std": 0.0239,
+          "folds": [
+            0.8586,
+            0.8044,
+            0.8551,
+            0.8611,
+            0.8339
+          ],
+          "interval_95": [
+            0.8129,
+            0.8723
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "unsafe_clearance_rate": {
+          "mean": 0.0835,
+          "fold_std": 0.0388,
+          "folds": [
+            0.0794,
+            0.0373,
+            0.1166,
+            0.1282,
+            0.0559
+          ],
+          "interval_95": [
+            0.0354,
+            0.1316
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "overfit_fitness_gap": {
+          "mean": 7.418,
+          "fold_std": 5.0747,
+          "folds": [
+            4.68,
+            5.69,
+            15.78,
+            8.21,
+            2.73
+          ],
+          "interval_95": [
+            1.1169,
+            13.7191
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "predict_seconds_per_case": {
+          "mean": 2.5e-07,
+          "fold_std": 3e-08,
+          "folds": [
+            3e-07,
+            2.5e-07,
+            2.3e-07,
+            2.4e-07,
+            2.4e-07
+          ],
+          "interval_95": [
+            2.2e-07,
+            2.9e-07
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "folds": [
+          {
+            "fold": 1,
+            "n_test": 800,
+            "fit_seconds": 0.0134,
+            "predict_seconds": 0.000236,
+            "predict_seconds_per_case": 3e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8588,
+              "macro_f1": 0.8586,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.8982,
+                  "recall": 0.8065,
+                  "f1": 0.8499,
+                  "support": 372
+                },
+                "RFI": {
+                  "precision": 0.7473,
+                  "recall": 0.9929,
+                  "f1": 0.8528,
+                  "support": 140
+                },
+                "ESCALATE": {
+                  "precision": 0.8857,
+                  "recall": 0.8611,
+                  "f1": 0.8732,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    300,
+                    41,
+                    31
+                  ],
+                  [
+                    0,
+                    139,
+                    1
+                  ],
+                  [
+                    34,
+                    6,
+                    248
+                  ]
+                ]
+              },
+              "cost": 576,
+              "escalate_all_cost": 1396,
+              "fitness": 58.74,
+              "unsafe_clearance_count": 34,
+              "unsafe_clearance_rate": 0.0794,
+              "over_caution_count": 72,
+              "over_caution_rate": 0.1935,
+              "tipping_off_count": 6,
+              "tipping_off_rate": 0.0208
+            },
+            "train_accuracy": 0.8747,
+            "train_fitness": 63.42,
+            "overfit_accuracy_gap": 0.0159,
+            "overfit_fitness_gap": 4.68
+          },
+          {
+            "fold": 2,
+            "n_test": 800,
+            "fit_seconds": 0.0129,
+            "predict_seconds": 0.000198,
+            "predict_seconds_per_case": 2.5e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8013,
+              "macro_f1": 0.8044,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9398,
+                  "recall": 0.6739,
+                  "f1": 0.7849,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.7181,
+                  "recall": 0.9574,
+                  "f1": 0.8207,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.7399,
+                  "recall": 0.8889,
+                  "f1": 0.8076,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    250,
+                    35,
+                    86
+                  ],
+                  [
+                    2,
+                    135,
+                    4
+                  ],
+                  [
+                    14,
+                    18,
+                    256
+                  ]
+                ]
+              },
+              "cost": 585,
+              "escalate_all_cost": 1395,
+              "fitness": 58.06,
+              "unsafe_clearance_count": 16,
+              "unsafe_clearance_rate": 0.0373,
+              "over_caution_count": 121,
+              "over_caution_rate": 0.3261,
+              "tipping_off_count": 18,
+              "tipping_off_rate": 0.0625
+            },
+            "train_accuracy": 0.8297,
+            "train_fitness": 63.75,
+            "overfit_accuracy_gap": 0.0284,
+            "overfit_fitness_gap": 5.69
+          },
+          {
+            "fold": 3,
+            "n_test": 800,
+            "fit_seconds": 0.013,
+            "predict_seconds": 0.000181,
+            "predict_seconds_per_case": 2.3e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8562,
+              "macro_f1": 0.8551,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.8615,
+                  "recall": 0.8383,
+                  "f1": 0.8497,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.7784,
+                  "recall": 0.922,
+                  "f1": 0.8442,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.8971,
+                  "recall": 0.8472,
+                  "f1": 0.8714,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    311,
+                    33,
+                    27
+                  ],
+                  [
+                    10,
+                    130,
+                    1
+                  ],
+                  [
+                    40,
+                    4,
+                    244
+                  ]
+                ]
+              },
+              "cost": 694,
+              "escalate_all_cost": 1395,
+              "fitness": 50.25,
+              "unsafe_clearance_count": 50,
+              "unsafe_clearance_rate": 0.1166,
+              "over_caution_count": 60,
+              "over_caution_rate": 0.1617,
+              "tipping_off_count": 4,
+              "tipping_off_rate": 0.0139
+            },
+            "train_accuracy": 0.9012,
+            "train_fitness": 66.03,
+            "overfit_accuracy_gap": 0.045,
+            "overfit_fitness_gap": 15.78
+          },
+          {
+            "fold": 4,
+            "n_test": 800,
+            "fit_seconds": 0.013,
+            "predict_seconds": 0.000189,
+            "predict_seconds_per_case": 2.4e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8575,
+              "macro_f1": 0.8611,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.8518,
+                  "recall": 0.8518,
+                  "f1": 0.8518,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.825,
+                  "recall": 0.9362,
+                  "f1": 0.8771,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.8848,
+                  "recall": 0.8264,
+                  "f1": 0.8546,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    316,
+                    26,
+                    29
+                  ],
+                  [
+                    7,
+                    132,
+                    2
+                  ],
+                  [
+                    48,
+                    2,
+                    238
+                  ]
+                ]
+              },
+              "cost": 725,
+              "escalate_all_cost": 1395,
+              "fitness": 48.03,
+              "unsafe_clearance_count": 55,
+              "unsafe_clearance_rate": 0.1282,
+              "over_caution_count": 55,
+              "over_caution_rate": 0.1482,
+              "tipping_off_count": 2,
+              "tipping_off_rate": 0.0069
+            },
+            "train_accuracy": 0.8819,
+            "train_fitness": 56.24,
+            "overfit_accuracy_gap": 0.0244,
+            "overfit_fitness_gap": 8.21
+          },
+          {
+            "fold": 5,
+            "n_test": 800,
+            "fit_seconds": 0.0131,
+            "predict_seconds": 0.000192,
+            "predict_seconds_per_case": 2.4e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8237,
+              "macro_f1": 0.8339,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9146,
+                  "recall": 0.6927,
+                  "f1": 0.7883,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.7989,
+                  "recall": 0.9858,
+                  "f1": 0.8825,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.7623,
+                  "recall": 0.9132,
+                  "f1": 0.831,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    257,
+                    33,
+                    81
+                  ],
+                  [
+                    1,
+                    139,
+                    1
+                  ],
+                  [
+                    23,
+                    2,
+                    263
+                  ]
+                ]
+              },
+              "cost": 590,
+              "escalate_all_cost": 1395,
+              "fitness": 57.71,
+              "unsafe_clearance_count": 24,
+              "unsafe_clearance_rate": 0.0559,
+              "over_caution_count": 114,
+              "over_caution_rate": 0.3073,
+              "tipping_off_count": 2,
+              "tipping_off_rate": 0.0069
+            },
+            "train_accuracy": 0.8347,
+            "train_fitness": 60.44,
+            "overfit_accuracy_gap": 0.011,
+            "overfit_fitness_gap": 2.73
+          }
+        ]
+      },
+      "hand": {
+        "n": 28,
+        "accuracy": 0.8571,
+        "macro_f1": 0.8519,
+        "per_class": {
+          "CLOSE": {
+            "precision": 0.875,
+            "recall": 0.875,
+            "f1": 0.875,
+            "support": 16
+          },
+          "RFI": {
+            "precision": 0.75,
+            "recall": 1.0,
+            "f1": 0.8571,
+            "support": 3
+          },
+          "ESCALATE": {
+            "precision": 0.875,
+            "recall": 0.7778,
+            "f1": 0.8235,
+            "support": 9
+          }
+        },
+        "confusion_matrix": {
+          "rows": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "columns": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "counts": [
+            [
+              14,
+              1,
+              1
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              2,
+              0,
+              7
+            ]
+          ]
+        },
+        "cost": 26,
+        "escalate_all_cost": 54,
+        "fitness": 51.85,
+        "unsafe_clearance_count": 2,
+        "unsafe_clearance_rate": 0.1667,
+        "over_caution_count": 2,
+        "over_caution_rate": 0.125,
+        "tipping_off_count": 0,
+        "tipping_off_rate": 0.0,
+        "trained_on": 3972,
+        "fit_seconds": 0.016,
+        "predict_seconds_per_case": 5e-06
+      },
+      "marginal_cost_gbp": 0
+    },
+    {
+      "id": "nb",
+      "label": "Gaussian naive Bayes",
+      "explainability": "Assumes each feature is independent given the verdict. The class-conditional means can be listed. That assumption is false for these cases.",
+      "cites_evidence": false,
+      "deterministic": false,
+      "cv": {
+        "pooled": {
+          "n": 4000,
+          "accuracy": 0.5513,
+          "macro_f1": 0.5527,
+          "per_class": {
+            "CLOSE": {
+              "precision": 0.8834,
+              "recall": 0.3917,
+              "f1": 0.5427,
+              "support": 1856
+            },
+            "RFI": {
+              "precision": 0.3346,
+              "recall": 0.9773,
+              "f1": 0.4986,
+              "support": 704
+            },
+            "ESCALATE": {
+              "precision": 0.7047,
+              "recall": 0.5486,
+              "f1": 0.6169,
+              "support": 1440
+            }
+          },
+          "confusion_matrix": {
+            "rows": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "columns": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "counts": [
+              [
+                727,
+                812,
+                317
+              ],
+              [
+                2,
+                688,
+                14
+              ],
+              [
+                94,
+                556,
+                790
+              ]
+            ]
+          },
+          "cost": 6043,
+          "escalate_all_cost": 6976,
+          "fitness": 13.37,
+          "unsafe_clearance_count": 96,
+          "unsafe_clearance_rate": 0.0448,
+          "over_caution_count": 1129,
+          "over_caution_rate": 0.6083,
+          "tipping_off_count": 556,
+          "tipping_off_rate": 0.3861
+        },
+        "fitness": {
+          "mean": 13.376,
+          "fold_std": 3.6407,
+          "folds": [
+            11.03,
+            11.83,
+            18.64,
+            9.82,
+            15.56
+          ],
+          "interval_95": [
+            8.8555,
+            17.8965
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "accuracy": {
+          "mean": 0.5513,
+          "fold_std": 0.0399,
+          "folds": [
+            0.5375,
+            0.525,
+            0.6175,
+            0.5188,
+            0.5575
+          ],
+          "interval_95": [
+            0.5018,
+            0.6008
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "macro_f1": {
+          "mean": 0.5527,
+          "fold_std": 0.0375,
+          "folds": [
+            0.5411,
+            0.5262,
+            0.6143,
+            0.5219,
+            0.5599
+          ],
+          "interval_95": [
+            0.5061,
+            0.5993
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "unsafe_clearance_rate": {
+          "mean": 0.0448,
+          "fold_std": 0.0175,
+          "folds": [
+            0.0444,
+            0.0303,
+            0.0746,
+            0.035,
+            0.0396
+          ],
+          "interval_95": [
+            0.0231,
+            0.0665
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "overfit_fitness_gap": {
+          "mean": 0.818,
+          "fold_std": 1.3492,
+          "folds": [
+            1.59,
+            1.55,
+            1.27,
+            -1.58,
+            1.26
+          ],
+          "interval_95": [
+            -0.8573,
+            2.4933
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "predict_seconds_per_case": {
+          "mean": 8.9e-07,
+          "fold_std": 2.2e-07,
+          "folds": [
+            1.28e-06,
+            8e-07,
+            7.8e-07,
+            8.1e-07,
+            7.9e-07
+          ],
+          "interval_95": [
+            6.2e-07,
+            1.16e-06
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "folds": [
+          {
+            "fold": 1,
+            "n_test": 800,
+            "fit_seconds": 0.0047,
+            "predict_seconds": 0.001028,
+            "predict_seconds_per_case": 1.28e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.5375,
+              "macro_f1": 0.5411,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.8774,
+                  "recall": 0.3656,
+                  "f1": 0.5161,
+                  "support": 372
+                },
+                "RFI": {
+                  "precision": 0.3174,
+                  "recall": 0.9929,
+                  "f1": 0.481,
+                  "support": 140
+                },
+                "ESCALATE": {
+                  "precision": 0.7488,
+                  "recall": 0.5382,
+                  "f1": 0.6263,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    136,
+                    185,
+                    51
+                  ],
+                  [
+                    0,
+                    139,
+                    1
+                  ],
+                  [
+                    19,
+                    114,
+                    155
+                  ]
+                ]
+              },
+              "cost": 1242,
+              "escalate_all_cost": 1396,
+              "fitness": 11.03,
+              "unsafe_clearance_count": 19,
+              "unsafe_clearance_rate": 0.0444,
+              "over_caution_count": 236,
+              "over_caution_rate": 0.6344,
+              "tipping_off_count": 114,
+              "tipping_off_rate": 0.3958
+            },
+            "train_accuracy": 0.53,
+            "train_fitness": 12.62,
+            "overfit_accuracy_gap": -0.0075,
+            "overfit_fitness_gap": 1.59
+          },
+          {
+            "fold": 2,
+            "n_test": 800,
+            "fit_seconds": 0.0039,
+            "predict_seconds": 0.00064,
+            "predict_seconds_per_case": 8e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.525,
+              "macro_f1": 0.5262,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9133,
+                  "recall": 0.3693,
+                  "f1": 0.5259,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.3279,
+                  "recall": 0.9929,
+                  "f1": 0.493,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.6413,
+                  "recall": 0.4965,
+                  "f1": 0.5597,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    137,
+                    155,
+                    79
+                  ],
+                  [
+                    0,
+                    140,
+                    1
+                  ],
+                  [
+                    13,
+                    132,
+                    143
+                  ]
+                ]
+              },
+              "cost": 1230,
+              "escalate_all_cost": 1395,
+              "fitness": 11.83,
+              "unsafe_clearance_count": 13,
+              "unsafe_clearance_rate": 0.0303,
+              "over_caution_count": 234,
+              "over_caution_rate": 0.6307,
+              "tipping_off_count": 132,
+              "tipping_off_rate": 0.4583
+            },
+            "train_accuracy": 0.5387,
+            "train_fitness": 13.38,
+            "overfit_accuracy_gap": 0.0137,
+            "overfit_fitness_gap": 1.55
+          },
+          {
+            "fold": 3,
+            "n_test": 800,
+            "fit_seconds": 0.0036,
+            "predict_seconds": 0.000627,
+            "predict_seconds_per_case": 7.8e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.6175,
+              "macro_f1": 0.6143,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.8298,
+                  "recall": 0.4205,
+                  "f1": 0.5581,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.4136,
+                  "recall": 0.9504,
+                  "f1": 0.5763,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.7083,
+                  "recall": 0.7083,
+                  "f1": 0.7083,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    156,
+                    138,
+                    77
+                  ],
+                  [
+                    0,
+                    134,
+                    7
+                  ],
+                  [
+                    32,
+                    52,
+                    204
+                  ]
+                ]
+              },
+              "cost": 1135,
+              "escalate_all_cost": 1395,
+              "fitness": 18.64,
+              "unsafe_clearance_count": 32,
+              "unsafe_clearance_rate": 0.0746,
+              "over_caution_count": 215,
+              "over_caution_rate": 0.5795,
+              "tipping_off_count": 52,
+              "tipping_off_rate": 0.1806
+            },
+            "train_accuracy": 0.6428,
+            "train_fitness": 19.91,
+            "overfit_accuracy_gap": 0.0253,
+            "overfit_fitness_gap": 1.27
+          },
+          {
+            "fold": 4,
+            "n_test": 800,
+            "fit_seconds": 0.0034,
+            "predict_seconds": 0.000645,
+            "predict_seconds_per_case": 8.1e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.5188,
+              "macro_f1": 0.5219,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9057,
+                  "recall": 0.3881,
+                  "f1": 0.5434,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.3058,
+                  "recall": 0.9716,
+                  "f1": 0.4652,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.6943,
+                  "recall": 0.4653,
+                  "f1": 0.5572,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    144,
+                    170,
+                    57
+                  ],
+                  [
+                    2,
+                    137,
+                    2
+                  ],
+                  [
+                    13,
+                    141,
+                    134
+                  ]
+                ]
+              },
+              "cost": 1258,
+              "escalate_all_cost": 1395,
+              "fitness": 9.82,
+              "unsafe_clearance_count": 15,
+              "unsafe_clearance_rate": 0.035,
+              "over_caution_count": 227,
+              "over_caution_rate": 0.6119,
+              "tipping_off_count": 141,
+              "tipping_off_rate": 0.4896
+            },
+            "train_accuracy": 0.5069,
+            "train_fitness": 8.24,
+            "overfit_accuracy_gap": -0.0119,
+            "overfit_fitness_gap": -1.58
+          },
+          {
+            "fold": 5,
+            "n_test": 800,
+            "fit_seconds": 0.0033,
+            "predict_seconds": 0.00063,
+            "predict_seconds_per_case": 7.9e-07,
+            "test": {
+              "n": 800,
+              "accuracy": 0.5575,
+              "macro_f1": 0.5599,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9006,
+                  "recall": 0.4151,
+                  "f1": 0.5683,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.3294,
+                  "recall": 0.9787,
+                  "f1": 0.4929,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.7333,
+                  "recall": 0.5347,
+                  "f1": 0.6185,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    154,
+                    164,
+                    53
+                  ],
+                  [
+                    0,
+                    138,
+                    3
+                  ],
+                  [
+                    17,
+                    117,
+                    154
+                  ]
+                ]
+              },
+              "cost": 1178,
+              "escalate_all_cost": 1395,
+              "fitness": 15.56,
+              "unsafe_clearance_count": 17,
+              "unsafe_clearance_rate": 0.0396,
+              "over_caution_count": 217,
+              "over_caution_rate": 0.5849,
+              "tipping_off_count": 117,
+              "tipping_off_rate": 0.4062
+            },
+            "train_accuracy": 0.5575,
+            "train_fitness": 16.82,
+            "overfit_accuracy_gap": 0.0,
+            "overfit_fitness_gap": 1.26
+          }
+        ]
+      },
+      "hand": {
+        "n": 28,
+        "accuracy": 0.5357,
+        "macro_f1": 0.5238,
+        "per_class": {
+          "CLOSE": {
+            "precision": 1.0,
+            "recall": 0.3125,
+            "f1": 0.4762,
+            "support": 16
+          },
+          "RFI": {
+            "precision": 0.2727,
+            "recall": 1.0,
+            "f1": 0.4286,
+            "support": 3
+          },
+          "ESCALATE": {
+            "precision": 0.5833,
+            "recall": 0.7778,
+            "f1": 0.6667,
+            "support": 9
+          }
+        },
+        "confusion_matrix": {
+          "rows": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "columns": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "counts": [
+            [
+              5,
+              6,
+              5
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              2,
+              7
+            ]
+          ]
+        },
+        "cost": 39,
+        "escalate_all_cost": 54,
+        "fitness": 27.78,
+        "unsafe_clearance_count": 0,
+        "unsafe_clearance_rate": 0.0,
+        "over_caution_count": 11,
+        "over_caution_rate": 0.6875,
+        "tipping_off_count": 2,
+        "tipping_off_rate": 0.2222,
+        "trained_on": 3972,
+        "fit_seconds": 0.0045,
+        "predict_seconds_per_case": 1.3e-05
+      },
+      "marginal_cost_gbp": 0
+    },
+    {
+      "id": "knn",
+      "label": "K-nearest neighbours",
+      "explainability": "The verdict is a vote of the 15 nearest training cases. There is no rule to show a regulator, and no evidence id.",
+      "cites_evidence": false,
+      "deterministic": false,
+      "cv": {
+        "pooled": {
+          "n": 4000,
+          "accuracy": 0.9165,
+          "macro_f1": 0.9194,
+          "per_class": {
+            "CLOSE": {
+              "precision": 0.8981,
+              "recall": 0.9256,
+              "f1": 0.9116,
+              "support": 1856
+            },
+            "RFI": {
+              "precision": 0.9418,
+              "recall": 0.919,
+              "f1": 0.9303,
+              "support": 704
+            },
+            "ESCALATE": {
+              "precision": 0.9293,
+              "recall": 0.9035,
+              "f1": 0.9162,
+              "support": 1440
+            }
+          },
+          "confusion_matrix": {
+            "rows": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "columns": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "counts": [
+              [
+                1718,
+                40,
+                98
+              ],
+              [
+                56,
+                647,
+                1
+              ],
+              [
+                139,
+                0,
+                1301
+              ]
+            ]
+          },
+          "cost": 2366,
+          "escalate_all_cost": 6976,
+          "fitness": 66.08,
+          "unsafe_clearance_count": 195,
+          "unsafe_clearance_rate": 0.091,
+          "over_caution_count": 138,
+          "over_caution_rate": 0.0744,
+          "tipping_off_count": 0,
+          "tipping_off_rate": 0.0
+        },
+        "fitness": {
+          "mean": 66.084,
+          "fold_std": 7.5816,
+          "folds": [
+            61.39,
+            67.17,
+            56.06,
+            70.32,
+            75.48
+          ],
+          "interval_95": [
+            56.6702,
+            75.4978
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "accuracy": {
+          "mean": 0.9165,
+          "fold_std": 0.0164,
+          "folds": [
+            0.9038,
+            0.92,
+            0.8962,
+            0.9263,
+            0.9363
+          ],
+          "interval_95": [
+            0.8962,
+            0.9369
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "macro_f1": {
+          "mean": 0.9193,
+          "fold_std": 0.0164,
+          "folds": [
+            0.9085,
+            0.9239,
+            0.8971,
+            0.9294,
+            0.9378
+          ],
+          "interval_95": [
+            0.899,
+            0.9397
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "unsafe_clearance_rate": {
+          "mean": 0.091,
+          "fold_std": 0.0223,
+          "folds": [
+            0.1028,
+            0.0886,
+            0.1212,
+            0.0793,
+            0.0629
+          ],
+          "interval_95": [
+            0.0633,
+            0.1186
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "overfit_fitness_gap": {
+          "mean": 5.644,
+          "fold_std": 7.5977,
+          "folds": [
+            11.76,
+            5.31,
+            13.73,
+            2.7,
+            -5.28
+          ],
+          "interval_95": [
+            -3.7898,
+            15.0778
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "predict_seconds_per_case": {
+          "mean": 9.89e-06,
+          "fold_std": 5.51e-06,
+          "folds": [
+            1.975e-05,
+            7.47e-06,
+            7.21e-06,
+            7.38e-06,
+            7.65e-06
+          ],
+          "interval_95": [
+            3.05e-06,
+            1.674e-05
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "folds": [
+          {
+            "fold": 1,
+            "n_test": 800,
+            "fit_seconds": 0.0027,
+            "predict_seconds": 0.015801,
+            "predict_seconds_per_case": 1.975e-05,
+            "test": {
+              "n": 800,
+              "accuracy": 0.9038,
+              "macro_f1": 0.9085,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.8851,
+                  "recall": 0.9113,
+                  "f1": 0.898,
+                  "support": 372
+                },
+                "RFI": {
+                  "precision": 0.9348,
+                  "recall": 0.9214,
+                  "f1": 0.9281,
+                  "support": 140
+                },
+                "ESCALATE": {
+                  "precision": 0.914,
+                  "recall": 0.8854,
+                  "f1": 0.8995,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    339,
+                    9,
+                    24
+                  ],
+                  [
+                    11,
+                    129,
+                    0
+                  ],
+                  [
+                    33,
+                    0,
+                    255
+                  ]
+                ]
+              },
+              "cost": 539,
+              "escalate_all_cost": 1396,
+              "fitness": 61.39,
+              "unsafe_clearance_count": 44,
+              "unsafe_clearance_rate": 0.1028,
+              "over_caution_count": 33,
+              "over_caution_rate": 0.0887,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.935,
+            "train_fitness": 73.15,
+            "overfit_accuracy_gap": 0.0312,
+            "overfit_fitness_gap": 11.76
+          },
+          {
+            "fold": 2,
+            "n_test": 800,
+            "fit_seconds": 0.0029,
+            "predict_seconds": 0.005974,
+            "predict_seconds_per_case": 7.47e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.92,
+              "macro_f1": 0.9239,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9008,
+                  "recall": 0.9299,
+                  "f1": 0.9151,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.9366,
+                  "recall": 0.9433,
+                  "f1": 0.9399,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.9382,
+                  "recall": 0.8958,
+                  "f1": 0.9165,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    345,
+                    9,
+                    17
+                  ],
+                  [
+                    8,
+                    133,
+                    0
+                  ],
+                  [
+                    30,
+                    0,
+                    258
+                  ]
+                ]
+              },
+              "cost": 458,
+              "escalate_all_cost": 1395,
+              "fitness": 67.17,
+              "unsafe_clearance_count": 38,
+              "unsafe_clearance_rate": 0.0886,
+              "over_caution_count": 26,
+              "over_caution_rate": 0.0701,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.9325,
+            "train_fitness": 72.48,
+            "overfit_accuracy_gap": 0.0125,
+            "overfit_fitness_gap": 5.31
+          },
+          {
+            "fold": 3,
+            "n_test": 800,
+            "fit_seconds": 0.0026,
+            "predict_seconds": 0.005764,
+            "predict_seconds_per_case": 7.21e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.8962,
+              "macro_f1": 0.8971,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.8673,
+                  "recall": 0.9164,
+                  "f1": 0.8912,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.9248,
+                  "recall": 0.8723,
+                  "f1": 0.8978,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.9236,
+                  "recall": 0.8819,
+                  "f1": 0.9023,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    340,
+                    10,
+                    21
+                  ],
+                  [
+                    18,
+                    123,
+                    0
+                  ],
+                  [
+                    34,
+                    0,
+                    254
+                  ]
+                ]
+              },
+              "cost": 613,
+              "escalate_all_cost": 1395,
+              "fitness": 56.06,
+              "unsafe_clearance_count": 52,
+              "unsafe_clearance_rate": 0.1212,
+              "over_caution_count": 31,
+              "over_caution_rate": 0.0836,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.93,
+            "train_fitness": 69.79,
+            "overfit_accuracy_gap": 0.0338,
+            "overfit_fitness_gap": 13.73
+          },
+          {
+            "fold": 4,
+            "n_test": 800,
+            "fit_seconds": 0.0028,
+            "predict_seconds": 0.005903,
+            "predict_seconds_per_case": 7.38e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.9263,
+              "macro_f1": 0.9294,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9108,
+                  "recall": 0.9353,
+                  "f1": 0.9229,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.9562,
+                  "recall": 0.9291,
+                  "f1": 0.9424,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.9326,
+                  "recall": 0.9132,
+                  "f1": 0.9228,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    347,
+                    6,
+                    18
+                  ],
+                  [
+                    9,
+                    131,
+                    1
+                  ],
+                  [
+                    25,
+                    0,
+                    263
+                  ]
+                ]
+              },
+              "cost": 414,
+              "escalate_all_cost": 1395,
+              "fitness": 70.32,
+              "unsafe_clearance_count": 34,
+              "unsafe_clearance_rate": 0.0793,
+              "over_caution_count": 24,
+              "over_caution_rate": 0.0647,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.9328,
+            "train_fitness": 73.02,
+            "overfit_accuracy_gap": 0.0065,
+            "overfit_fitness_gap": 2.7
+          },
+          {
+            "fold": 5,
+            "n_test": 800,
+            "fit_seconds": 0.0025,
+            "predict_seconds": 0.006119,
+            "predict_seconds_per_case": 7.65e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.9363,
+              "macro_f1": 0.9378,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9278,
+                  "recall": 0.9353,
+                  "f1": 0.9315,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.9562,
+                  "recall": 0.9291,
+                  "f1": 0.9424,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.9377,
+                  "recall": 0.941,
+                  "f1": 0.9393,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    347,
+                    6,
+                    18
+                  ],
+                  [
+                    10,
+                    131,
+                    0
+                  ],
+                  [
+                    17,
+                    0,
+                    271
+                  ]
+                ]
+              },
+              "cost": 342,
+              "escalate_all_cost": 1395,
+              "fitness": 75.48,
+              "unsafe_clearance_count": 27,
+              "unsafe_clearance_rate": 0.0629,
+              "over_caution_count": 24,
+              "over_caution_rate": 0.0647,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.9244,
+            "train_fitness": 70.2,
+            "overfit_accuracy_gap": -0.0119,
+            "overfit_fitness_gap": -5.28
+          }
+        ]
+      },
+      "hand": {
+        "n": 28,
+        "accuracy": 0.9286,
+        "macro_f1": 0.9421,
+        "per_class": {
+          "CLOSE": {
+            "precision": 0.9375,
+            "recall": 0.9375,
+            "f1": 0.9375,
+            "support": 16
+          },
+          "RFI": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 3
+          },
+          "ESCALATE": {
+            "precision": 0.8889,
+            "recall": 0.8889,
+            "f1": 0.8889,
+            "support": 9
+          }
+        },
+        "confusion_matrix": {
+          "rows": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "columns": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "counts": [
+            [
+              15,
+              0,
+              1
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              1,
+              0,
+              8
+            ]
+          ]
+        },
+        "cost": 13,
+        "escalate_all_cost": 54,
+        "fitness": 75.93,
+        "unsafe_clearance_count": 1,
+        "unsafe_clearance_rate": 0.0833,
+        "over_caution_count": 1,
+        "over_caution_rate": 0.0625,
+        "tipping_off_count": 0,
+        "tipping_off_rate": 0.0,
+        "trained_on": 3972,
+        "fit_seconds": 0.0035,
+        "predict_seconds_per_case": 3.2e-05
+      },
+      "marginal_cost_gbp": 0
+    },
+    {
+      "id": "mlp",
+      "label": "Neural network (MLP)",
+      "explainability": "One hidden layer of 32 units. The weights are not an explanation and the model cites no document.",
+      "cites_evidence": false,
+      "deterministic": false,
+      "cv": {
+        "pooled": {
+          "n": 4000,
+          "accuracy": 0.9285,
+          "macro_f1": 0.9328,
+          "per_class": {
+            "CLOSE": {
+              "precision": 0.9208,
+              "recall": 0.9267,
+              "f1": 0.9237,
+              "support": 1856
+            },
+            "RFI": {
+              "precision": 0.9491,
+              "recall": 0.9531,
+              "f1": 0.9511,
+              "support": 704
+            },
+            "ESCALATE": {
+              "precision": 0.9284,
+              "recall": 0.9187,
+              "f1": 0.9236,
+              "support": 1440
+            }
+          },
+          "confusion_matrix": {
+            "rows": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "columns": [
+              "CLOSE",
+              "RFI",
+              "ESCALATE"
+            ],
+            "counts": [
+              [
+                1720,
+                36,
+                100
+              ],
+              [
+                31,
+                671,
+                2
+              ],
+              [
+                117,
+                0,
+                1323
+              ]
+            ]
+          },
+          "cost": 1892,
+          "escalate_all_cost": 6976,
+          "fitness": 72.88,
+          "unsafe_clearance_count": 148,
+          "unsafe_clearance_rate": 0.069,
+          "over_caution_count": 136,
+          "over_caution_rate": 0.0733,
+          "tipping_off_count": 0,
+          "tipping_off_rate": 0.0
+        },
+        "fitness": {
+          "mean": 72.88,
+          "fold_std": 6.5461,
+          "folds": [
+            64.54,
+            77.06,
+            67.53,
+            75.34,
+            79.93
+          ],
+          "interval_95": [
+            64.752,
+            81.008
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "accuracy": {
+          "mean": 0.9285,
+          "fold_std": 0.0122,
+          "folds": [
+            0.9163,
+            0.9425,
+            0.9163,
+            0.9287,
+            0.9387
+          ],
+          "interval_95": [
+            0.9133,
+            0.9437
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "macro_f1": {
+          "mean": 0.9328,
+          "fold_std": 0.0118,
+          "folds": [
+            0.9212,
+            0.9455,
+            0.9209,
+            0.9327,
+            0.9437
+          ],
+          "interval_95": [
+            0.9182,
+            0.9474
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "unsafe_clearance_rate": {
+          "mean": 0.069,
+          "fold_std": 0.0216,
+          "folds": [
+            0.0981,
+            0.0606,
+            0.0839,
+            0.0583,
+            0.0443
+          ],
+          "interval_95": [
+            0.0422,
+            0.0958
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "overfit_fitness_gap": {
+          "mean": 8.264,
+          "fold_std": 6.475,
+          "folds": [
+            17.7,
+            3.16,
+            11.95,
+            6.11,
+            2.4
+          ],
+          "interval_95": [
+            0.2242,
+            16.3038
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "predict_seconds_per_case": {
+          "mean": 1.2e-06,
+          "fold_std": 1.9e-07,
+          "folds": [
+            1.54e-06,
+            1.14e-06,
+            1.13e-06,
+            1.1e-06,
+            1.1e-06
+          ],
+          "interval_95": [
+            9.7e-07,
+            1.44e-06
+          ],
+          "interval_note": "Mean plus or minus the Student t 95% critical value (df=4) times the fold standard deviation over sqrt(5). It describes the five fold scores, not a bootstrap of customers."
+        },
+        "folds": [
+          {
+            "fold": 1,
+            "n_test": 800,
+            "fit_seconds": 0.8589,
+            "predict_seconds": 0.001236,
+            "predict_seconds_per_case": 1.54e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.9163,
+              "macro_f1": 0.9212,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.892,
+                  "recall": 0.9328,
+                  "f1": 0.912,
+                  "support": 372
+                },
+                "RFI": {
+                  "precision": 0.9366,
+                  "recall": 0.95,
+                  "f1": 0.9433,
+                  "support": 140
+                },
+                "ESCALATE": {
+                  "precision": 0.9405,
+                  "recall": 0.8785,
+                  "f1": 0.9084,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    347,
+                    9,
+                    16
+                  ],
+                  [
+                    7,
+                    133,
+                    0
+                  ],
+                  [
+                    35,
+                    0,
+                    253
+                  ]
+                ]
+              },
+              "cost": 495,
+              "escalate_all_cost": 1396,
+              "fitness": 64.54,
+              "unsafe_clearance_count": 42,
+              "unsafe_clearance_rate": 0.0981,
+              "over_caution_count": 25,
+              "over_caution_rate": 0.0672,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.955,
+            "train_fitness": 82.24,
+            "overfit_accuracy_gap": 0.0387,
+            "overfit_fitness_gap": 17.7
+          },
+          {
+            "fold": 2,
+            "n_test": 800,
+            "fit_seconds": 0.8798,
+            "predict_seconds": 0.000909,
+            "predict_seconds_per_case": 1.14e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.9425,
+              "macro_f1": 0.9455,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.931,
+                  "recall": 0.9461,
+                  "f1": 0.9385,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.951,
+                  "recall": 0.9645,
+                  "f1": 0.9577,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.9536,
+                  "recall": 0.9271,
+                  "f1": 0.9401,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    351,
+                    7,
+                    13
+                  ],
+                  [
+                    5,
+                    136,
+                    0
+                  ],
+                  [
+                    21,
+                    0,
+                    267
+                  ]
+                ]
+              },
+              "cost": 320,
+              "escalate_all_cost": 1395,
+              "fitness": 77.06,
+              "unsafe_clearance_count": 26,
+              "unsafe_clearance_rate": 0.0606,
+              "over_caution_count": 20,
+              "over_caution_rate": 0.0539,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.9497,
+            "train_fitness": 80.22,
+            "overfit_accuracy_gap": 0.0072,
+            "overfit_fitness_gap": 3.16
+          },
+          {
+            "fold": 3,
+            "n_test": 800,
+            "fit_seconds": 0.7356,
+            "predict_seconds": 0.000906,
+            "predict_seconds_per_case": 1.13e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.9163,
+              "macro_f1": 0.9209,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9043,
+                  "recall": 0.9164,
+                  "f1": 0.9103,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.9306,
+                  "recall": 0.9504,
+                  "f1": 0.9404,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.925,
+                  "recall": 0.8993,
+                  "f1": 0.912,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    340,
+                    10,
+                    21
+                  ],
+                  [
+                    7,
+                    134,
+                    0
+                  ],
+                  [
+                    29,
+                    0,
+                    259
+                  ]
+                ]
+              },
+              "cost": 453,
+              "escalate_all_cost": 1395,
+              "fitness": 67.53,
+              "unsafe_clearance_count": 36,
+              "unsafe_clearance_rate": 0.0839,
+              "over_caution_count": 31,
+              "over_caution_rate": 0.0836,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.9469,
+            "train_fitness": 79.48,
+            "overfit_accuracy_gap": 0.0306,
+            "overfit_fitness_gap": 11.95
+          },
+          {
+            "fold": 4,
+            "n_test": 800,
+            "fit_seconds": 0.8719,
+            "predict_seconds": 0.000878,
+            "predict_seconds_per_case": 1.1e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.9287,
+              "macro_f1": 0.9327,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9317,
+                  "recall": 0.9191,
+                  "f1": 0.9254,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.9568,
+                  "recall": 0.9433,
+                  "f1": 0.95,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.9119,
+                  "recall": 0.934,
+                  "f1": 0.9228,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    341,
+                    6,
+                    24
+                  ],
+                  [
+                    6,
+                    133,
+                    2
+                  ],
+                  [
+                    19,
+                    0,
+                    269
+                  ]
+                ]
+              },
+              "cost": 344,
+              "escalate_all_cost": 1395,
+              "fitness": 75.34,
+              "unsafe_clearance_count": 25,
+              "unsafe_clearance_rate": 0.0583,
+              "over_caution_count": 30,
+              "over_caution_rate": 0.0809,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.9513,
+            "train_fitness": 81.45,
+            "overfit_accuracy_gap": 0.0226,
+            "overfit_fitness_gap": 6.11
+          },
+          {
+            "fold": 5,
+            "n_test": 800,
+            "fit_seconds": 0.8457,
+            "predict_seconds": 0.000883,
+            "predict_seconds_per_case": 1.1e-06,
+            "test": {
+              "n": 800,
+              "accuracy": 0.9387,
+              "macro_f1": 0.9437,
+              "per_class": {
+                "CLOSE": {
+                  "precision": 0.9472,
+                  "recall": 0.9191,
+                  "f1": 0.933,
+                  "support": 371
+                },
+                "RFI": {
+                  "precision": 0.9712,
+                  "recall": 0.9574,
+                  "f1": 0.9643,
+                  "support": 141
+                },
+                "ESCALATE": {
+                  "precision": 0.9136,
+                  "recall": 0.9549,
+                  "f1": 0.9338,
+                  "support": 288
+                }
+              },
+              "confusion_matrix": {
+                "rows": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "columns": [
+                  "CLOSE",
+                  "RFI",
+                  "ESCALATE"
+                ],
+                "counts": [
+                  [
+                    341,
+                    4,
+                    26
+                  ],
+                  [
+                    6,
+                    135,
+                    0
+                  ],
+                  [
+                    13,
+                    0,
+                    275
+                  ]
+                ]
+              },
+              "cost": 280,
+              "escalate_all_cost": 1395,
+              "fitness": 79.93,
+              "unsafe_clearance_count": 19,
+              "unsafe_clearance_rate": 0.0443,
+              "over_caution_count": 30,
+              "over_caution_rate": 0.0809,
+              "tipping_off_count": 0,
+              "tipping_off_rate": 0.0
+            },
+            "train_accuracy": 0.9525,
+            "train_fitness": 82.33,
+            "overfit_accuracy_gap": 0.0138,
+            "overfit_fitness_gap": 2.4
+          }
+        ]
+      },
+      "hand": {
+        "n": 28,
+        "accuracy": 0.8929,
+        "macro_f1": 0.9151,
+        "per_class": {
+          "CLOSE": {
+            "precision": 0.9333,
+            "recall": 0.875,
+            "f1": 0.9032,
+            "support": 16
+          },
+          "RFI": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 3
+          },
+          "ESCALATE": {
+            "precision": 0.8,
+            "recall": 0.8889,
+            "f1": 0.8421,
+            "support": 9
+          }
+        },
+        "confusion_matrix": {
+          "rows": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "columns": [
+            "CLOSE",
+            "RFI",
+            "ESCALATE"
+          ],
+          "counts": [
+            [
+              14,
+              0,
+              2
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              1,
+              0,
+              8
+            ]
+          ]
+        },
+        "cost": 16,
+        "escalate_all_cost": 54,
+        "fitness": 70.37,
+        "unsafe_clearance_count": 1,
+        "unsafe_clearance_rate": 0.0833,
+        "over_caution_count": 2,
+        "over_caution_rate": 0.125,
+        "tipping_off_count": 0,
+        "tipping_off_rate": 0.0,
+        "trained_on": 3972,
+        "fit_seconds": 0.8127,
+        "predict_seconds_per_case": 1.7e-05
+      },
+      "marginal_cost_gbp": 0
+    }
+  ],
+  "winner": {
+    "id": "rules",
+    "label": "Rules engine",
+    "reason": "Rules engine is first on the cost-matrix fitness of the 28 hand labels (100.0), with 0 unsafe closes. Fitness already charges 10 for a wrongful close, so raw accuracy is not the deciding figure. It encodes the policy directly, cites the evidence id on each case, and does not vary between runs. The next system, K-nearest neighbours, is 24.07 fitness points lower on the same 28 cases and has 1 unsafe close. The classical models were trained to copy the engine, so that gap is a failure to reproduce the policy from these features, not a score against an official answer key.",
+    "tie_break": "Higher hand-label fitness first, because fitness is the cost-matrix score and a wrongful close already costs 10. Fewer unsafe closes break a fitness tie. The rules engine wins any remaining tie."
+  },
+  "margins": [
+    {
+      "id": "rules",
+      "label": "Rules engine",
+      "hand_fitness": 100.0,
+      "hand_fitness_behind_winner": 0.0,
+      "unsafe_clearance_count": 0,
+      "unsafe_clearance_behind_winner": 0,
+      "cv_fitness_mean": null,
+      "cv_fitness_fold_std": null,
+      "policy_reproduction_gap": null
+    },
+    {
+      "id": "logreg",
+      "label": "Logistic regression",
+      "hand_fitness": 59.26,
+      "hand_fitness_behind_winner": 40.74,
+      "unsafe_clearance_count": 1,
+      "unsafe_clearance_behind_winner": 1,
+      "cv_fitness_mean": 64.206,
+      "cv_fitness_fold_std": 5.5538,
+      "policy_reproduction_gap": 35.79
+    },
+    {
+      "id": "tree",
+      "label": "Decision tree",
+      "hand_fitness": 51.85,
+      "hand_fitness_behind_winner": 48.15,
+      "unsafe_clearance_count": 2,
+      "unsafe_clearance_behind_winner": 2,
+      "cv_fitness_mean": 54.558,
+      "cv_fitness_fold_std": 5.0215,
+      "policy_reproduction_gap": 45.44
+    },
+    {
+      "id": "nb",
+      "label": "Gaussian naive Bayes",
+      "hand_fitness": 27.78,
+      "hand_fitness_behind_winner": 72.22,
+      "unsafe_clearance_count": 0,
+      "unsafe_clearance_behind_winner": 0,
+      "cv_fitness_mean": 13.376,
+      "cv_fitness_fold_std": 3.6407,
+      "policy_reproduction_gap": 86.62
+    },
+    {
+      "id": "knn",
+      "label": "K-nearest neighbours",
+      "hand_fitness": 75.93,
+      "hand_fitness_behind_winner": 24.07,
+      "unsafe_clearance_count": 1,
+      "unsafe_clearance_behind_winner": 1,
+      "cv_fitness_mean": 66.084,
+      "cv_fitness_fold_std": 7.5816,
+      "policy_reproduction_gap": 33.92
+    },
+    {
+      "id": "mlp",
+      "label": "Neural network (MLP)",
+      "hand_fitness": 70.37,
+      "hand_fitness_behind_winner": 29.63,
+      "unsafe_clearance_count": 1,
+      "unsafe_clearance_behind_winner": 1,
+      "cv_fitness_mean": 72.88,
+      "cv_fitness_fold_std": 6.5461,
+      "policy_reproduction_gap": 27.12
+    }
+  ],
+  "elapsed_seconds": 7.2
+}

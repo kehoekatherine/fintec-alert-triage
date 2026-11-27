@@ -145,20 +145,32 @@ python3 -m triage.score --expected docs/data/hand_labels.json --predicted /tmp/p
 
 ## Model cost
 
-`docs/dashboard.html` compares the rules engine with four published APIs, checked 26 Nov 2026:
+`docs/dashboard.html` compares the rules engine with published APIs. Closed models were checked 26 Nov 2026. DeepSeek was read 27 Nov 2026:
 
 | Model | Input / 1M | Output / 1M | Source |
 |---|---:|---:|---|
 | GPT-4o | $2.50 | $10.00 | [OpenAI pricing](https://developers.openai.com/api/docs/pricing) |
 | Claude Sonnet 5.5 | $2.00 | $10.00 | [Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing) |
 | Gemini 3.8 Flash | $0.75 | $3.75 | [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing) through 31 Dec 2026, then $1.50 / $7.50 |
-| Llama 3.3 70B on Groq | $0.59 | $0.79 | [Groq on-demand pricing](https://home.cloud.groq.io/pricing), published speed 394 tokens/sec |
+| Llama 3.3 70B (open weight, Groq hosted) | $0.59 | $0.79 | [Groq on-demand pricing](https://home.cloud.groq.io/pricing), published speed 394 tokens/sec. Not a self-hosted GPU cost. |
+| DeepSeek V4.1 Flash (hosted API) | $0.30 | $1.20 | [DeepSeek pricing](https://api-docs.deepseek.com/quick_start/pricing/), cache-miss peak rate, read 27 Nov 2026. Off-peak is half. Not a self-hosted GPU cost. |
 
 Input size is measured, not guessed: the customer, the alerts, the transactions inside the review window, and the evidence markdown. Mean length is about 9,300 characters, which is about **2,265 tokens** at four characters per token. That divisor is an estimate, not a provider tokenizer. Rules-engine reasons are about 90 tokens. The dashboard's default of 400 output tokens is a separate assumption for a short JSON answer, and the sliders recompute cost, a month of volume, analyst time, and the 200-case clock against 30 minutes.
 
-No model was called. Accuracy cells for the four models stay empty. Put a real run in `docs/data/llm_benchmarks.json` under a model's `measured` object (`verdict_accuracy`, and optionally `reason_accuracy` and `unsafe_clearance`) and reload the page.
+No language model was called. Accuracy cells for those models stay empty. Put a real run in `docs/data/llm_benchmarks.json` under a model's `measured` object (`verdict_accuracy`, and optionally `reason_accuracy` and `unsafe_clearance`) and reload the page.
 
-Groq's price is hosted inference of open weights. It is not a self-hosted GPU bill. GPT-4o's own model page lists that snapshot as deprecated; the price list still publishes the rates above.
+Llama and DeepSeek are open-weight models priced here as hosted APIs. Neither figure is a self-hosted GPU bill. GPT-4o's own model page lists that snapshot as deprecated; the price list still publishes the rates above.
+
+## Classical models
+
+`analysis/ml_compare.py` trains logistic regression, a decision tree, Gaussian naive Bayes, 15-nearest neighbours and a one-layer network on features of the 4,000 development cases. The features are amounts, counts, in/out ratios, near-threshold counts, counterparty and list-name flags, alert ids and institution. The training labels are the rules engine's own verdicts. There is no official label file. The 28 hand labels agree with the engine, so a score against them is not an independent test.
+
+```bash
+python3 -m pip install scikit-learn
+python3 analysis/ml_compare.py
+```
+
+The script writes `docs/data/ml_comparison.json`. The Model cost view reads that file. Stratified 5-fold cross-validation uses seed 7. Fitness is the brief's cost matrix. A wrongful close costs 10, so fitness, not raw accuracy, decides the ranking. On the hand labels the rules engine is fitness 100 with no unsafe close, because it is the policy those labels were checked against.
 
 ## Tests
 

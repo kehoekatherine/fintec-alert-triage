@@ -7,7 +7,10 @@
     {
       "id": "gpt-4o",
       "label": "GPT-4o",
+      "chart_label": "GPT-4o",
       "provider": "OpenAI",
+      "open_weight": false,
+      "hosting": "closed",
       "kind": "GPT-4o class",
       "input_usd_per_mtok": 2.5,
       "output_usd_per_mtok": 10.0,
@@ -21,7 +24,10 @@
     {
       "id": "claude-sonnet-5-5",
       "label": "Claude Sonnet 5.5",
+      "chart_label": "Claude",
       "provider": "Anthropic",
+      "open_weight": false,
+      "hosting": "closed",
       "kind": "Claude Sonnet class",
       "input_usd_per_mtok": 2.0,
       "output_usd_per_mtok": 10.0,
@@ -35,7 +41,10 @@
     {
       "id": "gemini-3.8-flash",
       "label": "Gemini 3.8 Flash",
+      "chart_label": "Gemini",
       "provider": "Google",
+      "open_weight": false,
+      "hosting": "closed",
       "kind": "Gemini Flash class",
       "input_usd_per_mtok": 0.75,
       "output_usd_per_mtok": 3.75,
@@ -48,9 +57,12 @@
     },
     {
       "id": "llama-3.3-70b-groq",
-      "label": "Llama 3.3 70B",
+      "label": "Llama 3.3 70B (open weight)",
+      "chart_label": "Llama",
       "provider": "Groq (hosted open weights)",
-      "kind": "Llama class",
+      "kind": "Open weight, hosted API price",
+      "open_weight": true,
+      "hosting": "groq",
       "input_usd_per_mtok": 0.59,
       "output_usd_per_mtok": 0.79,
       "source": "https://home.cloud.groq.io/pricing",
@@ -58,6 +70,23 @@
       "published_output_tokens_per_sec": 394,
       "assumed_output_tokens_per_sec": 394,
       "speed_note": "394 tokens/sec is Groq's published on-demand speed for this model, checked 26 Nov 2026. Generation time below uses that figure. It is not a latency measured on these cases.",
+      "measured": null
+    },
+    {
+      "id": "deepseek-v4-1-flash",
+      "label": "DeepSeek V4.1 Flash (hosted API)",
+      "chart_label": "DeepSeek",
+      "provider": "DeepSeek",
+      "kind": "Open weight, hosted API price",
+      "open_weight": true,
+      "hosting": "deepseek-api",
+      "input_usd_per_mtok": 0.3,
+      "output_usd_per_mtok": 1.2,
+      "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "source_note": "DeepSeek API list price, read 27 Nov 2026. This row uses the cache-miss peak rate for deepseek-flash (model version DeepSeek-V4.1-Flash-1017): $0.30 input and $1.20 output per 1M tokens. Off-peak is half of that. A peak cache hit is $0.006 input. This is DeepSeek's hosted API, not a self-hosted GPU cost. DeepSeek has published weights for earlier models such as V3.2; this price does not claim the V4.1 Flash checkpoint can be downloaded.",
+      "published_output_tokens_per_sec": null,
+      "assumed_output_tokens_per_sec": 40,
+      "speed_note": "The pricing page does not publish tokens per second. 40 is the same assumption used when a provider gives no speed. It is not a measurement on these cases.",
       "measured": null
     }
   ]

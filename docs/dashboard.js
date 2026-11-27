@@ -122,9 +122,11 @@
       const minutes = cost.seconds * 200 / 60;
       const timeKind = minutes <= 30 ? "caution" : "risk";
       const timeLabel = minutes <= 30 ? "Estimate" : "Over 30 min";
-      const privacy = model.id.includes("llama")
-        ? cell("caution", "Caution", "Sent to Groq unless you self-host. GPU cost is not in this price.")
-        : cell("risk", "Risk", "Case text is sent to " + model.provider + ".");
+      const privacy = model.hosting === "groq"
+        ? cell("caution", "Caution", "Open weights. This price is Groq's hosted API. A self-hosted GPU is not included. Case text is sent to Groq unless you self-host.")
+        : model.hosting === "deepseek-api"
+          ? cell("caution", "Caution", "Hosted API price, not a GPU quote. Case text is sent to DeepSeek.")
+          : cell("risk", "Risk", "Case text is sent to " + model.provider + ".");
       const speedNote = model.published_output_tokens_per_sec ? "From the published tokens/sec figure." : "Speed is an assumption, not a measurement.";
       return `<tr>
         <th>${model.label}</th>
@@ -143,7 +145,7 @@
   function renderCharts(list) {
     const rulesSeconds = payload.triage_seconds_per_case * 200;
     const rows = list.map(model => ({
-      label: model.label.split(" ")[0],
+      label: model.chart_label || model.label.split(" ")[0],
       cost: modelCost(model).per1000,
       seconds: modelCost(model).seconds * 200,
       colour: "var(--blue)",
@@ -157,7 +159,7 @@
       rules: true
     }]);
 
-    const w = 520, h = 248, padL = 12, padR = 8, base = 196, plotH = 148;
+    const w = 680, h = 248, padL = 12, padR = 8, base = 196, plotH = 148;
     const slot = (w - padL - padR) / rows.length;
     const bw = Math.min(52, slot * 0.62);
     const axis = `<line x1="${padL}" x2="${w - padR}" y1="${base}" y2="${base}" stroke="var(--separator)" stroke-width="1.5"></line>`;
@@ -168,13 +170,13 @@
       const bh = row.rules ? 6 : raw;
       const x = padL + i * slot + (slot - bw) / 2;
       const y = base - bh;
-      const value = row.rules ? "£0" : money(row.cost, 0);
+      const value = row.rules ? "£0" : money(row.cost, row.cost < 10 ? 1 : 0);
       return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="${row.rules ? 2 : 6}" fill="${row.colour}"></rect>
         <text x="${x + bw / 2}" y="${y - 8}" text-anchor="middle" font-size="13" font-weight="650" fill="${row.rules ? "var(--green)" : "var(--text)"}">${value}</text>
         <text x="${x + bw / 2}" y="${base + 20}" text-anchor="middle" font-size="13" fill="${row.rules ? "var(--green)" : "var(--secondary)"}">${row.label}</text>`;
     }).join("");
     $("cost-chart").innerHTML = `<h3 style="margin:0 0 8px">GBP per 1,000 cases</h3>
-      <svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Cost per one thousand cases. Four models, then the rules engine at zero pounds on the right.">${axis}${costBars}</svg>`;
+      <svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Cost per one thousand cases. The language models, then the rules engine at zero pounds on the right.">${axis}${costBars}</svg>`;
 
     const tmax = Math.max(...rows.map(row => row.seconds), 1800);
     const limitY = base - (1800 / tmax) * plotH;
@@ -198,7 +200,153 @@
         <text x="${w - padR}" y="${Math.max(14, limitY - 6)}" text-anchor="end" font-size="12" fill="var(--red)">30 min</text>
         ${axis}${timeBars}
       </svg>
-      <p class="footnote">Same order on both charts: the four models, then Rules on the right in green. The rules bar is measured (£0, and ${rulesSeconds.toFixed(2)} seconds for 200 cases). A short green stub keeps that zero-height bar visible. Blue uses a published tokens-per-second figure. Orange is an assumption. Input processing time is not included.</p>`;
+      <p class="footnote">Same order on both charts: the language models, then Rules on the right in green. Llama is open weight, priced as Groq's hosted API. DeepSeek is the hosted API list price, not a GPU quote. The rules bar is measured (£0, and ${rulesSeconds.toFixed(2)} seconds for 200 cases). A short green stub keeps that zero-height bar visible. Blue uses a published tokens-per-second figure. Orange is an assumption. Input processing time is not included.</p>`;
+  }
+
+  function esc(value) {
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  }
+  function pct(value) {
+    return value == null ? "—" : (Number(value) * 100).toFixed(1) + "%";
+  }
+  function latencyText(seconds) {
+    if (seconds == null) return "—";
+    if (seconds < 0.001) return (seconds * 1e6).toFixed(1) + " µs";
+    if (seconds < 1) return (seconds * 1000).toFixed(2) + " ms";
+    return Number(seconds).toFixed(3) + " s";
+  }
+  function plusMinus(stat, digits = 2) {
+    if (!stat) return "—";
+    return Number(stat.mean).toFixed(digits) + " ± " + Number(stat.fold_std).toFixed(digits);
+  }
+  function confusionTable(score) {
+    const matrix = score.confusion_matrix;
+    const head = matrix.columns.map(label => `<th>${esc(label)}</th>`).join("");
+    const body = matrix.rows.map((label, i) => `<tr><th>${esc(label)}</th>${matrix.counts[i].map(n => `<td>${n}</td>`).join("")}</tr>`).join("");
+    return `<table><thead><tr><th>Right \\ sent</th>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  }
+  function metricBars(title, aria, rows) {
+    const w = 680, h = 230, padL = 16, padR = 8, base = 186, plotH = 140;
+    const max = Math.max(...rows.map(row => row.value), 1);
+    const slot = (w - padL - padR) / rows.length;
+    const bw = Math.min(36, slot * 0.7);
+    const bars = rows.map((row, i) => {
+      const raw = (row.value / max) * plotH;
+      const bh = row.value === 0 ? 6 : raw;
+      const x = padL + i * slot + (slot - bw) / 2;
+      const y = base - bh;
+      return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="${row.value === 0 ? 2 : 5}" fill="${row.colour}"></rect>
+        <text x="${x + bw / 2}" y="${y - 6}" text-anchor="middle" font-size="11" fill="var(--text)">${esc(row.display)}</text>
+        <text x="${x + bw / 2}" y="${base + 16}" text-anchor="middle" font-size="11" fill="var(--secondary)">${esc(row.label)}</text>`;
+    }).join("");
+    return `<div class="chart"><h3 style="margin:0 0 8px">${esc(title)}</h3>
+      <svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(aria)}">
+        <line x1="${padL}" x2="${w - padR}" y1="${base}" y2="${base}" stroke="var(--separator)" stroke-width="1.5"></line>
+        ${bars}
+      </svg></div>`;
+  }
+  function renderML(report) {
+    const node = $("ml-compare");
+    if (!node || !report) return;
+    const colours = {
+      rules: "var(--green)", logreg: "var(--blue)", tree: "var(--orange)",
+      nb: "var(--fill-strong)", knn: "#5856d6", mlp: "var(--red)"
+    };
+    const rows = [report.rules_engine].concat(report.models);
+    const shortName = id => ({ rules: "Rules", logreg: "Logistic", tree: "Tree", nb: "Bayes", knn: "KNN", mlp: "MLP" }[id] || id);
+    const byId = Object.fromEntries(report.margins.map(row => [row.id, row]));
+    const table = rows.map(item => {
+      const cv = item.cv;
+      return `<tr>
+        <td><strong>${esc(item.label)}</strong></td>
+        <td>${pct(item.hand.accuracy)}</td>
+        <td>${pct(item.hand.macro_f1)}</td>
+        <td>${item.hand.fitness}</td>
+        <td>${item.hand.unsafe_clearance_count} <span class="footnote">(${pct(item.hand.unsafe_clearance_rate)})</span></td>
+        <td>${item.hand.over_caution_count}</td>
+        <td>${item.hand.tipping_off_count}</td>
+        <td>${cv ? plusMinus(cv.fitness) : "Not cross-validated"}</td>
+        <td>${cv ? plusMinus(cv.macro_f1, 3) : "—"}</td>
+        <td>${latencyText(cv ? cv.predict_seconds_per_case.mean : item.predict_seconds_per_case_measured)}</td>
+      </tr>`;
+    }).join("");
+    const handBars = rows.map(item => ({
+      label: shortName(item.id),
+      value: item.hand.fitness,
+      display: String(item.hand.fitness),
+      colour: colours[item.id] || "var(--blue)"
+    }));
+    const unsafeBars = rows.map(item => ({
+      label: shortName(item.id),
+      value: item.hand.unsafe_clearance_count,
+      display: String(item.hand.unsafe_clearance_count),
+      colour: item.hand.unsafe_clearance_count ? "var(--red)" : "var(--green)"
+    }));
+    const marginBars = rows.map(item => ({
+      label: shortName(item.id),
+      value: byId[item.id].hand_fitness_behind_winner,
+      display: String(byId[item.id].hand_fitness_behind_winner),
+      colour: byId[item.id].hand_fitness_behind_winner === 0 ? "var(--green)" : "var(--blue)"
+    }));
+    const classRows = rows.map(item => {
+      const cells = ["CLOSE", "RFI", "ESCALATE"].map(label => {
+        const row = item.hand.per_class[label];
+        return `<td>${pct(row.precision)} / ${pct(row.recall)}</td>`;
+      }).join("");
+      return `<tr><th>${esc(item.label)}</th>${cells}</tr>`;
+    }).join("");
+    const matrices = rows.map(item => `<div class="chart"><h3 style="margin:0 0 8px">${esc(item.label)}</h3>${confusionTable(item.hand)}<p class="footnote">Hand labels, ${item.hand.n} cases. Rows are the right verdict.</p></div>`).join("");
+    node.innerHTML = `
+      <p>${esc(report.winner.reason)}</p>
+      <p class="footnote">${esc(report.winner.tie_break)} Seed ${report.seed}, ${report.folds} stratified folds. ${report.n_cases} development cases, ${report.n_features} features. Training labels are the rules engine's own verdicts.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Model</th><th>Hand accuracy</th><th>Hand macro F1</th><th>Hand fitness</th>
+            <th>Unsafe closes</th><th>Over-caution</th><th>Tipping-off</th>
+            <th>CV fitness</th><th>CV macro F1</th><th>Predict time</th>
+          </tr></thead>
+          <tbody>${table}</tbody>
+        </table>
+      </div>
+      <p class="footnote">Hand columns use the 28 hand labels. CV columns train and test on the rules engine's verdicts, so they measure how well the model copies the policy. The rules engine is not cross-validated against its own labels. CV cells are the five-fold mean ± sample standard deviation. Unsafe closes are true RFI or ESCALATE cases sent as CLOSE. Over-caution is a true CLOSE sent as RFI or ESCALATE. Tipping-off is a true ESCALATE sent as RFI. Predict time for the rules engine is the measured figure in the payload file. Classical times are this machine's batch predict, per case.</p>
+      <div class="grid" style="margin-top:16px">
+        ${metricBars("Hand-label fitness", "Cost-matrix fitness on the 28 hand labels. Higher is better. The rules engine is 100.", handBars)}
+        ${metricBars("Unsafe closes on the 28 hand labels", "Count of wrongful closes on the hand labels. Lower is better. A zero bar is a short green stub.", unsafeBars)}
+      </div>
+      <div class="grid" style="margin-top:16px">
+        ${metricBars("Fitness points behind the leader", "How many hand-label fitness points each system sits behind the leader. The leader is a short green stub at zero.", marginBars)}
+        <div class="chart">
+          <h3 style="margin:0 0 8px">Policy-reproduction gap</h3>
+          <p>Cross-validated fitness is how much of the escalate-everything cost the model still avoids when the label is the rules engine. 100 would mean it copied the policy. The gap below is 100 minus the five-fold mean.</p>
+          <ul>${report.models.map(item => `<li><strong>${esc(item.label)}</strong>: ${item.cv.fitness.mean} fitness, gap ${byId[item.id].policy_reproduction_gap}. Fold interval ${item.cv.fitness.interval_95[0]} to ${item.cv.fitness.interval_95[1]}.</li>`).join("")}</ul>
+          <p class="footnote">${esc(report.models[0].cv.fitness.interval_note)}</p>
+        </div>
+      </div>
+      <h3>Precision / recall on the hand labels</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Model</th><th>CLOSE</th><th>RFI</th><th>ESCALATE</th></tr></thead>
+          <tbody>${classRows}</tbody>
+        </table>
+      </div>
+      <p class="footnote">Each cell is precision / recall. Support is the hand-label count for that class, which is small.</p>
+      <h3>Confusion matrices, hand labels</h3>
+      <div class="grid">${matrices}</div>
+      <h3>What a regulator can audit</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Model</th><th>Cites evidence</th><th>Deterministic</th><th>Explanation</th><th>Overfit gap, fitness</th></tr></thead>
+          <tbody>${rows.map(item => `<tr>
+            <th>${esc(item.label)}</th>
+            <td>${item.cites_evidence ? "Yes" : "No"}</td>
+            <td>${item.deterministic ? "Yes" : "No. Fixed seed 7 on this scikit-learn version."}</td>
+            <td>${esc(item.explainability)}</td>
+            <td>${item.cv ? plusMinus(item.cv.overfit_fitness_gap) : "None. It was not fitted."}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </div>
+      <ul class="footnote">${report.caveats.map(line => `<li>${esc(line)}</li>`).join("")}</ul>`;
   }
 
   function renderSources() {
@@ -231,14 +379,16 @@
   function redraw() { renderModels(); renderValue(); }
 
   async function init() {
-    const [bench, stats, hands] = await Promise.all([
+    const [bench, stats, hands, ml] = await Promise.all([
       fetch("data/llm_benchmarks.json").then(r => r.json()),
       fetch("data/payload_stats.json").then(r => r.json()),
-      fetch("data/hand_labels.json").then(r => r.json())
+      fetch("data/hand_labels.json").then(r => r.json()),
+      fetch("data/ml_comparison.json").then(r => r.json())
     ]);
     models = bench.models;
     payload = stats;
     labels = hands;
+    renderML(ml);
     if (bench.output_tokens_default) inputs.find(row => row[0] === "outputTokens")[2] = bench.output_tokens_default;
     $("controls").innerHTML = inputs.map(field).join("");
     $("controls").querySelectorAll("input").forEach(input => input.addEventListener("input", redraw));
