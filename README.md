@@ -241,7 +241,9 @@ Styles and scripts are loaded with a version query (`?v=`) so a new deploy is pi
 
 Taken from the live site. About ClearPath AML is the first tab and the page the app opens on. The case shot was opened from the list at the top of About, with that row highlighted.
 
-![About ClearPath AML, light, wide](docs/screenshots/bank-about-wide-light.png)
+![About ClearPath AML, light, wide](docs/screenshots/gold-about-wide-light.png)
+
+![Case Analysis, RFI, light, wide](docs/screenshots/gold-rfi-wide-light.png)
 
 ![Case Analysis, light, wide](docs/screenshots/bank-case-wide-light.png)
 
