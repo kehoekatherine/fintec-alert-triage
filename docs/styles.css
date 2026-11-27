@@ -111,6 +111,13 @@ button { cursor: pointer; }
 .about p { margin: 0 0 10px; }
 .about ol, .about ul { margin: 0 0 8px; padding-left: 1.25em; }
 .about li { margin: 4px 0; }
+.case-picks { list-style: none; margin: 0 0 28px; padding: 4px; max-height: 280px; overflow: auto; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
+.case-pick {
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 8px; align-items: center;
+  text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 8px 10px; font-size: 15px;
+}
+.case-pick:hover, .case-pick:focus-visible { background: color-mix(in srgb, var(--blue) 12%, transparent); }
+.case-pick .code { color: var(--secondary); }
 .mark {
   width: 40px; height: 40px; border-radius: 10px; background: var(--blue); color: white;
   display: grid; place-items: center; flex: none;
@@ -277,6 +284,8 @@ a { color: var(--blue); }
   .toolbar { flex-wrap: wrap; height: auto; min-height: 64px; padding: 8px 12px; }
   .decision-row { grid-template-columns: 1fr; }
   .brand-blurb { max-width: 36rem; }
+  .case-pick { grid-template-columns: 1fr auto; }
+  .case-pick .code { grid-column: 1; }
   .statement-wrap { max-height: none; }
   .statement thead { display: none; }
   .statement, .statement tbody, .statement tr, .statement td { display: block; width: 100%; }

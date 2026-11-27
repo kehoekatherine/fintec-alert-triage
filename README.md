@@ -9,10 +9,10 @@ The development data for the [TM hackathon](https://hosted-pages.godiligent.ai/h
 Live app:
 
 - Case Analysis: <https://kehoekatherine.github.io/fintec-alert-triage/?view=analysis>
-- Summary, including the operator overview: <https://kehoekatherine.github.io/fintec-alert-triage/?view=summary>
+- About ClearPath AML, the page the app opens on: <https://kehoekatherine.github.io/fintec-alert-triage/?view=about>
 - Model cost: <https://kehoekatherine.github.io/fintec-alert-triage/?view=cost>
 
-Case Analysis is the case reviewer. The same shell holds Summary and Model cost, so the title and the tab bar do not move when you switch. Clicking a case from either of those views opens it and highlights that row. The address keeps the view and the case id, so a link, the back button and the forward button land on the same case.
+The tabs are About ClearPath AML, then Case Analysis, then Model cost. With no `view` parameter the app opens on About. `?view=about` is the address for that page, and `?view=summary` still opens it. The title and the tab bar do not move when you switch. Clicking a case in the list, or in the cases at the top of About, opens it in Case Analysis and highlights that row. The address keeps the view and the case id, so a link, the back button and the forward button land on the same case.
 
 ## Operator guide
 
@@ -21,7 +21,7 @@ AML is the work of spotting money laundering and reporting it. ClearPath does th
 1. Open Case Analysis. The sample cases load on their own. For another firm, choose Open folder and pick a directory that contains `cases.jsonl`.
 2. Click a case. The list row stays highlighted and scrolls into view.
 3. Read the statement, then Why, then Next action.
-4. Use Summary for the mix of verdicts in the list you are looking at. The overview at the top of Summary is the same guide as this section.
+4. About ClearPath AML puts the counts for the list you are looking at first, then this guide. Model cost is the third tab.
 5. Use Model cost for token prices and for the classical-model comparison.
 
 How to read a case:
@@ -32,7 +32,7 @@ How to read a case:
 - **ESCALATE** means send the case to the MLRO and do not contact the customer. Once there is suspicion, the rules escalate rather than ask. Asking would tip the customer off.
 - The reason code is the policy label. The evidence ids are the document, transaction or list entry the decision used.
 
-Summary counts are only the cases on screen. They are not an official score.
+The counts at the top of About are only the cases on screen. They are not an official score. Each name in that list opens the case.
 
 Model cost: fitness is the share of the escalate-everything cost the system avoids, using the brief's matrix. A wrongful close costs 10. Unsafe clearance is closing a case that should have been an RFI or an escalation. Language-model accuracy on these cases was not measured. The classical comparison is below.
 
@@ -69,7 +69,7 @@ A run of 1,000 cases takes about a second after the files are read, and about 0.
 python3 -m http.server 8000 --directory docs
 ```
 
-Open <http://127.0.0.1:8000/>. Case Analysis loads a stratified slice of the real development cases, with verdicts from this rules engine. Summary and Model cost are the other two tabs. `dashboard.html` redirects to Model cost. To load another institution folder, use **Open folder** and choose a directory that contains `cases.jsonl`. That path runs the browser port in `docs/engine.js`. The scored file is always `system/run`; the browser port follows the same severity order and is not a line-for-line copy.
+Open <http://127.0.0.1:8000/>. The app opens on About ClearPath AML. Case Analysis is the next tab and loads a stratified slice of the real development cases, with verdicts from this rules engine. Model cost is the third tab. `dashboard.html` redirects to Model cost. To load another institution folder, use **Open folder** and choose a directory that contains `cases.jsonl`. That path runs the browser port in `docs/engine.js`. The scored file is always `system/run`; the browser port follows the same severity order and is not a line-for-line copy.
 
 ## Architecture
 
@@ -229,13 +229,13 @@ PYTHONPATH=. python3 scripts/build_site_data.py
 
 ## Screenshots
 
-Taken from the live site after the Case Analysis rename. The first shot is a case opened from Summary, with that row highlighted.
+Taken from the live site. About ClearPath AML is the first tab and the page the app opens on. The case shot was opened from the list at the top of About, with that row highlighted.
 
-![Case Analysis, reached from Summary, light, wide](docs/screenshots/live-analysis-from-summary-wide-light.png)
+![About ClearPath AML, light, wide](docs/screenshots/live-about-wide-light.png)
 
-![Overview on Summary, light, wide](docs/screenshots/live-overview-wide-light.png)
+![About ClearPath AML, light, phone](docs/screenshots/live-about-mobile-light.png)
 
-![Overview, light, phone](docs/screenshots/live-overview-mobile-light.png)
+![Case Analysis, opened from About, light, wide](docs/screenshots/live-analysis-from-about-wide-light.png)
 
 ![Model cost charts, light, wide](docs/screenshots/live-cost-charts-wide-light.png)
 

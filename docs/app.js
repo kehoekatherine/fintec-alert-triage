@@ -1,5 +1,5 @@
 (function () {
-  const state = { items: [], filterInst: "all", filterVerdict: "all", query: "", index: 0, view: "case", pendingCaseId: "" };
+  const state = { items: [], filterInst: "all", filterVerdict: "all", query: "", index: 0, view: "board", pendingCaseId: "" };
   const queue = document.getElementById("queue");
   const caseView = document.getElementById("case-view");
   const boardView = document.getElementById("board-view");
@@ -59,9 +59,9 @@
       <h3>How to use it</h3>
       <ol>
         <li>Open Case Analysis. The sample cases load on their own. To use another firm, choose Open folder and pick a folder that contains cases.jsonl.</li>
-        <li>Click a case in the list. The row stays highlighted, including when you come from Summary or Model cost, and when you use the address bar or the back button.</li>
+        <li>Click a case in the list, or in the cases at the top of About ClearPath AML. The row stays highlighted, including when you come from About or Model cost, and when you use the address bar or the back button.</li>
         <li>Read the statement, the reason and the next action before you do anything else.</li>
-        <li>Summary counts the verdicts in the list you are looking at. Model cost is where the prices and the model comparison live.</li>
+        <li>About ClearPath AML shows the counts for the list you are looking at, then this guide. Model cost is where the prices and the model comparison live.</li>
       </ol>
       <h3>How to read a case</h3>
       <ul>
@@ -72,8 +72,8 @@
         <li><strong>Reason code.</strong> The short policy label for why, such as a documented event or a list match that is a different person.</li>
         <li><strong>Evidence IDs.</strong> The document, transaction or list entry the decision relied on. In the case they link to that document.</li>
       </ul>
-      <h3>Summary</h3>
-      <p>The counts are the close, RFI and escalate cases in the list on screen, after your search and filters. They are not an official score, and they are not the hand-labelled sample.</p>
+      <h3>The counts above</h3>
+      <p>Those figures are the close, RFI and escalate cases in the list on screen, after your search and filters. They are not an official score, and they are not the hand-labelled sample. Click a name in that list to open the case.</p>
       <h3>Model cost</h3>
       <ul>
         <li><strong>Fitness</strong> is how much of the cost of escalating every case the system avoids. A wrongful close costs 10, so fitness matters more than a raw accuracy percentage.</li>
@@ -206,10 +206,15 @@
     const counts = { CLOSE: 0, RFI: 0, ESCALATE: 0 };
     rows.forEach(item => { counts[item.decision.verdict] = (counts[item.decision.verdict] || 0) + 1; });
     const n = rows.length || 1;
+    const picks = rows.map((item, i) => `
+      <li><button type="button" class="case-pick" data-i="${i}">
+        <strong>${escapeHtml(item.customer.name || item.case.case_id)}</strong>
+        <span class="code">${escapeHtml(item.case.case_id)}</span>
+        ${pill(item.decision.verdict)}
+      </button></li>`).join("");
     boardView.innerHTML = `
-      ${overviewBlock()}
       <h2>Cases on screen</h2>
-      <p class="muted">Verdict mix for the cases on screen. The official cost score needs labels; the hand-labelled sample is on the model-cost page.</p>
+      <p class="muted">Verdict mix for the cases in the list, after search and filters. This is not an official score.</p>
       <div class="stats">
         <div class="stat"><b>${rows.length}</b><span class="muted">Cases</span></div>
         <div class="stat"><b style="color:var(--green)">${counts.CLOSE || 0}</b><span class="muted">Close</span></div>
@@ -220,7 +225,17 @@
         <i class="CLOSE" style="width:${(counts.CLOSE || 0) / n * 100}%"></i>
         <i class="RFI" style="width:${(counts.RFI || 0) / n * 100}%"></i>
         <i class="ESCALATE" style="width:${(counts.ESCALATE || 0) / n * 100}%"></i>
-      </div>`;
+      </div>
+      <ul class="case-picks" aria-label="Cases on screen">${picks || `<li class="muted">No cases in this filter.</li>`}</ul>
+      ${overviewBlock()}`;
+    boardView.querySelectorAll(".case-pick").forEach(btn => btn.addEventListener("click", () => {
+      const index = Number(btn.dataset.i);
+      state.index = index;
+      state.pendingCaseId = rows[index]?.case?.case_id || "";
+      state.view = "case";
+      render();
+      syncUrl(true);
+    }));
   }
   function showView() {
     caseView.hidden = state.view !== "case";
@@ -240,7 +255,7 @@
     revealSelection();
   }
   function viewParam() {
-    if (state.view === "board") return "summary";
+    if (state.view === "board") return "about";
     if (state.view === "cost") return "cost";
     return "analysis";
   }
@@ -259,7 +274,7 @@
   function applyLocation() {
     const params = new URLSearchParams(location.search);
     const view = params.get("view");
-    if (view === "summary") state.view = "board";
+    if (view === "about" || view === "summary") state.view = "board";
     else if (view === "cost") state.view = "cost";
     else if (view === "analysis" || view === "case" || view === "queue") state.view = "case";
     state.pendingCaseId = params.get("case") || state.pendingCaseId || "";
