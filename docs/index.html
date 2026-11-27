@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter+Tight:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=df5ba1c24d">
+  <link rel="stylesheet" href="styles.css?v=5fe643a3bb">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -53,10 +53,12 @@
           <button type="button" data-theme="light">Light</button>
           <button type="button" data-theme="dark">Dark</button>
         </div>
-        <button class="tool" id="load-sample" type="button">Sample cases</button>
-        <label class="tool">Open folder<input id="folder" type="file" webkitdirectory multiple hidden></label>
-        <button class="tool" id="export-jsonl" type="button">Export JSONL</button>
-        <button class="tool ghost" id="export-csv" type="button">CSV</button>
+        <div class="toolbar-actions">
+          <button class="tool" id="load-sample" type="button">Sample cases</button>
+          <label class="tool">Open folder<input id="folder" type="file" webkitdirectory multiple hidden></label>
+          <button class="tool" id="export-jsonl" type="button">Export JSONL</button>
+          <button class="tool" id="export-csv" type="button">CSV</button>
+        </div>
       </header>
       <main id="main" class="content">
         <section id="case-view" aria-live="polite"></section>
@@ -120,8 +122,8 @@
       </main>
     </div>
   </div>
-  <script src="engine.js?v=df5ba1c24d"></script>
-  <script src="dashboard.js?v=df5ba1c24d"></script>
-  <script src="app.js?v=df5ba1c24d"></script>
+  <script src="engine.js?v=5fe643a3bb"></script>
+  <script src="dashboard.js?v=5fe643a3bb"></script>
+  <script src="app.js?v=5fe643a3bb"></script>
 </body>
 </html>

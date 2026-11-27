@@ -217,7 +217,7 @@
       <div class="stats">
         <div class="stat"><b>${rows.length}</b><span class="muted">Cases</span></div>
         <div class="stat"><b style="color:var(--green)">${counts.CLOSE || 0}</b><span class="muted">Close</span></div>
-        <div class="stat"><b style="color:var(--orange)">${counts.RFI || 0}</b><span class="muted">RFI</span></div>
+        <div class="stat"><b style="color:var(--gold-text)">${counts.RFI || 0}</b><span class="muted">RFI</span></div>
         <div class="stat"><b style="color:var(--red)">${counts.ESCALATE || 0}</b><span class="muted">Escalate</span></div>
       </div>
       <div class="bar" aria-hidden="true">
