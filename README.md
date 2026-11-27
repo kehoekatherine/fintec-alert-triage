@@ -227,19 +227,27 @@ Regenerate the browser bundle after an engine change:
 PYTHONPATH=. python3 scripts/build_site_data.py
 ```
 
+## Design
+
+The interface is a bank-style workstation: charcoal and white, a single red accent, generous space, and one job on the screen at a time. Headings and the large figures use Inter Tight. Body text uses Source Sans 3. Case ids and amounts use IBM Plex Mono. Light is the main theme. A dark theme remains available from the appearance control and from the system setting.
+
+It is inspired by the clarity of high-street banking sites. It does not use another bank's name, logo or marks. ClearPath AML is the brand. The earlier Apple-style interface has been replaced.
+
+About opens with the case counts and a short list, then the guide in sections you can open. Model cost is three sections: language-model prices, the classical comparison, and risk. A case opens with the verdict and one action button, the reason beside it, the statement, and the evidence tucked away until you ask for it.
+
+Styles and scripts are loaded with a version query (`?v=`) so a new deploy is picked up without a hard refresh.
+
 ## Screenshots
 
 Taken from the live site. About ClearPath AML is the first tab and the page the app opens on. The case shot was opened from the list at the top of About, with that row highlighted.
 
-![About ClearPath AML, light, wide](docs/screenshots/live-about-wide-light.png)
+![About ClearPath AML, light, wide](docs/screenshots/bank-about-wide-light.png)
 
-![About ClearPath AML, light, phone](docs/screenshots/live-about-mobile-light.png)
+![Case Analysis, light, wide](docs/screenshots/bank-case-wide-light.png)
 
-![Case Analysis, opened from About, light, wide](docs/screenshots/live-analysis-from-about-wide-light.png)
+![Model cost, light, wide](docs/screenshots/bank-cost-wide-light.png)
 
-![Model cost charts, light, wide](docs/screenshots/live-cost-charts-wide-light.png)
-
-![Classical comparison, light, wide](docs/screenshots/live-cost-ml-wide-light.png)
+![About ClearPath AML, light, phone](docs/screenshots/bank-about-mobile-light.png)
 
 ## Pages
 

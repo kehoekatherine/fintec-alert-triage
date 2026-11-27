@@ -9,16 +9,17 @@
   <meta property="og:description" content="Alert Triage Assistant. Reviews transaction-monitoring alerts against each firm's policy and decides, consistently and with cited evidence, whether to close, request information or escalate to the MLRO.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://kehoekatherine.github.io/fintec-alert-triage/">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter+Tight:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=df5ba1c24d">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
   <div class="app">
     <aside class="sidebar" aria-label="Case list">
       <div class="brand">
-        <div class="mark" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 7h16M4 12h10M4 17h13"/></svg>
-        </div>
+        <div class="mark" aria-hidden="true">CP</div>
         <h1>ClearPath AML</h1>
         <p class="brand-role">Alert Triage Assistant</p>
         <p class="brand-blurb">Decides close, RFI or escalate, with cited evidence.</p>
@@ -61,55 +62,66 @@
         <section id="case-view" aria-live="polite"></section>
         <section id="board-view" hidden></section>
         <section id="cost-view" hidden>
-          <h1>What it costs to triage with a model</h1>
-          <p class="muted">Prices were read from provider pages on 26 Nov 2026. Token counts are estimated from the 4,000 development cases (characters ÷ 4). No model was called, so accuracy cells stay empty until you drop measurements into <span class="code">docs/data/llm_benchmarks.json</span>.</p>
-          <section class="card" style="padding:8px 8px 12px;margin:16px 0">
-            <h2>Definitions</h2>
-            <div class="row"><span>Baseline</span><div>The deterministic rules engine in <span class="code">triage/engine.py</span>. It does not call a model. Every comparison below is against that system.</div></div>
-            <div class="row"><span>Fitness</span><div>The brief’s cost-matrix score out of 100: the share of the cost of escalating every case that the system avoids. A wrongful close costs 10, missing a close costs 3, an RFI on a true escalation costs 3. Escalating everything scores 0.</div></div>
-            <div class="row"><span>Accuracy</span><div>Share of cases with the right verdict, and share with the right reason code. On this page the denominator is a hand-labelled stratified sample, not the official answer key.</div></div>
-            <div class="row"><span>Unsafe clearance</span><div>Wrongful CLOSE rate: cases labelled RFI or ESCALATE that the system closed. That is the cost-10 error.</div></div>
-            <div class="row"><span>Overfitting</span><div>Absolute gap in fitness between the even and odd halves of the hand-labelled sample. The engine was not trained on those labels. A gap of 0 here is not an unseen-test score.</div></div>
-            <div class="row"><span>Cost</span><div>Model list price × estimated tokens. The rules engine’s marginal token cost is zero.</div></div>
-            <div class="row"><span>Workload</span><div>Analyst minutes avoided when a case is closed by the system. RFIs and escalations are assumed to stay with a person. Minutes and the hourly rate are sliders.</div></div>
-            <div class="row"><span>Customer value</span><div>Analyst pounds saved, closes that were not sent back as an RFI, and held payments the rules engine released. Held-payment value per payment is a slider because the dataset has no customer-loss figure.</div></div>
-          </section>
-          <h2>Rules baseline on the hand-labelled sample</h2>
-          <p class="footnote" id="label-warning"></p>
-          <div class="stats" id="baseline-stats"></div>
-          <h2>Assumptions you can change</h2>
-          <div class="controls" id="controls"></div>
-          <h2>Models, same case payload</h2>
-          <div class="table-wrap">
-            <table id="model-table">
-              <thead>
-                <tr>
-                  <th>Model</th><th>USD / 1M in</th><th>USD / 1M out</th>
-                  <th>Per case</th><th>Per 1,000</th><th>Per 800-case test</th><th>Per month</th>
-                  <th>Latency / case</th><th>200 cases vs 30 min</th>
-                  <th>Measured accuracy</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+          <div class="cost-head">
+            <p class="eyebrow">ClearPath AML</p>
+            <h1>Model cost</h1>
+            <p class="muted">One section at a time. Prices were read from provider pages. No language model was called on these cases.</p>
           </div>
-          <div class="grid" style="margin-top:16px">
-            <div class="chart" id="cost-chart"></div>
-            <div class="chart" id="time-chart"></div>
+          <div class="segmented cost-switch" role="tablist" aria-label="Model cost sections">
+            <button type="button" id="cost-tab-llm" role="tab" aria-selected="true" aria-controls="cost-panel-llm">Language models</button>
+            <button type="button" id="cost-tab-ml" role="tab" aria-selected="false" aria-controls="cost-panel-ml">Classical models</button>
+            <button type="button" id="cost-tab-risk" role="tab" aria-selected="false" aria-controls="cost-panel-risk">Risk</button>
           </div>
-          <h2 id="tradeoffs">Tradeoffs</h2>
-          <div class="table-wrap trade" id="tradeoffs-table"></div>
-          <p class="footnote">LLM accuracy on these cases has not been measured. An Unknown chip is not a score. Model cost and time follow the sliders above. Model times are generation estimates, not a timed run on these cases. The optional model hook that blocks a downgrade from escalate to close is off unless you pass <span class="code">--llm</span>.</p>
-          <h2>Classical models</h2>
-          <div id="ml-compare"></div>
-          <h2>Sources</h2>
-          <ol class="footnote" id="sources"></ol>
+          <div id="cost-panel-llm" role="tabpanel">
+            <h2>Assumptions you can change</h2>
+            <div class="controls" id="controls"></div>
+            <h2>Same case payload</h2>
+            <div class="table-wrap">
+              <table id="model-table">
+                <thead>
+                  <tr>
+                    <th>Model</th><th>USD / 1M in</th><th>USD / 1M out</th>
+                    <th>Per case</th><th>Per 1,000</th><th>Per 800-case test</th><th>Per month</th>
+                    <th>Latency / case</th><th>200 cases vs 30 min</th>
+                    <th>Measured accuracy</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="grid" style="margin-top:16px">
+              <div class="chart" id="cost-chart"></div>
+              <div class="chart" id="time-chart"></div>
+            </div>
+            <h2 id="tradeoffs">Tradeoffs</h2>
+            <div class="table-wrap trade" id="tradeoffs-table"></div>
+            <p class="footnote">LLM accuracy on these cases has not been measured. An Unknown chip is not a score. Model cost and time follow the sliders above. Model times are generation estimates, not a timed run on these cases.</p>
+            <h2>Sources</h2>
+            <ol class="footnote" id="sources"></ol>
+          </div>
+          <div id="cost-panel-ml" role="tabpanel" hidden>
+            <h2>Classical models</h2>
+            <div id="ml-compare"></div>
+          </div>
+          <div id="cost-panel-risk" role="tabpanel" hidden>
+            <h2>What the numbers mean</h2>
+            <section class="card">
+              <div class="row"><span>Baseline</span><div>The rules engine in <span class="code">triage/engine.py</span>. It does not call a model.</div></div>
+              <div class="row"><span>Fitness</span><div>Share of the escalate-everything cost the system avoids. A wrongful close costs 10. Escalating everything scores 0.</div></div>
+              <div class="row"><span>Unsafe clearance</span><div>Closing a case that should have been an RFI or an escalation.</div></div>
+              <div class="row"><span>Overfitting</span><div>Train score minus held-out score. The engine was not trained on the hand labels.</div></div>
+              <div class="row"><span>Circular test</span><div>The classical models were trained on the engine's own verdicts. A high score means they copied the policy. It is not an official unseen score.</div></div>
+            </section>
+            <h2>Rules baseline on the hand-labelled sample</h2>
+            <p class="footnote" id="label-warning"></p>
+            <div class="stats" id="baseline-stats"></div>
+          </div>
         </section>
       </main>
     </div>
   </div>
-  <script src="engine.js"></script>
-  <script src="dashboard.js"></script>
-  <script src="app.js"></script>
+  <script src="engine.js?v=df5ba1c24d"></script>
+  <script src="dashboard.js?v=df5ba1c24d"></script>
+  <script src="app.js?v=df5ba1c24d"></script>
 </body>
 </html>

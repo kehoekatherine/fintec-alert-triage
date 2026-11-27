@@ -51,37 +51,37 @@
     return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
   }
   function current() { return visible()[state.index]; }
+  function guide(title, body, open) {
+    return `<details class="guide"${open ? " open" : ""}><summary>${title}</summary><div class="guide-body">${body}</div></details>`;
+  }
   function overviewBlock() {
     return `<section class="about overview">
-      <p class="brand-role">ClearPath AML</p>
-      <h2>Alert Triage Assistant</h2>
-      <p>AML means Anti-Money Laundering. ClearPath reads a transaction-monitoring alert against that firm's own policy and decides, the same way each time, whether to close it, ask for information, or escalate it to the MLRO. The reason cites the document, transaction or list entry it used. It is for AML analysts and compliance teams at banks, payment and FX firms, e-money providers and investment platforms.</p>
-      <h3>How to use it</h3>
-      <ol>
+      ${guide("What ClearPath AML does", `<p>AML means Anti-Money Laundering. ClearPath reads a transaction-monitoring alert against that firm's own policy and decides, the same way each time, whether to close it, ask for information, or escalate it to the MLRO. The reason cites the document, transaction or list entry it used. It is for AML analysts and compliance teams at banks, payment and FX firms, e-money providers and investment platforms.</p>`, true)}
+      ${guide("How to use it", `<ol>
         <li>Open Case Analysis. The sample cases load on their own. To use another firm, choose Open folder and pick a folder that contains cases.jsonl.</li>
-        <li>Click a case in the list, or in the cases at the top of About ClearPath AML. The row stays highlighted, including when you come from About or Model cost, and when you use the address bar or the back button.</li>
+        <li>Click a case in the list, or in the cases at the top of this page. The row stays highlighted, including from About or Model cost, and from the address bar or the back button.</li>
         <li>Read the statement, the reason and the next action before you do anything else.</li>
-        <li>About ClearPath AML shows the counts for the list you are looking at, then this guide. Model cost is where the prices and the model comparison live.</li>
-      </ol>
-      <h3>How to read a case</h3>
-      <ul>
-        <li><strong>Statement.</strong> Rows run from oldest to newest, like a bank statement. Money in, in green, is a credit, deposit, top-up or funding receipt. Money out, in red, is a debit, withdrawal, card spend or payment sent. There is no running balance, because the file has no opening balance. A marker on a row means it is on an alert, or the decision cites it.</li>
-        <li><strong>CLOSE.</strong> The activity is explained. There is nothing further to do. At the payments firm, the next action also says whether a held payment can be released.</li>
-        <li><strong>RFI.</strong> Request for information. Ask for the document or detail named in the next action. Do this only when nothing in the case already looks like a crime.</li>
-        <li><strong>ESCALATE.</strong> Send the case to the money-laundering reporting officer. Do not contact the customer about the activity. Once there is a sign of suspicion, the decision is escalate, not an RFI. Asking the customer would tip them off.</li>
-        <li><strong>Reason code.</strong> The short policy label for why, such as a documented event or a list match that is a different person.</li>
-        <li><strong>Evidence IDs.</strong> The document, transaction or list entry the decision relied on. In the case they link to that document.</li>
-      </ul>
-      <h3>The counts above</h3>
-      <p>Those figures are the close, RFI and escalate cases in the list on screen, after your search and filters. They are not an official score, and they are not the hand-labelled sample. Click a name in that list to open the case.</p>
-      <h3>Model cost</h3>
-      <ul>
-        <li><strong>Fitness</strong> is how much of the cost of escalating every case the system avoids. A wrongful close costs 10, so fitness matters more than a raw accuracy percentage.</li>
-        <li><strong>Unsafe clearance</strong> is closing a case that should have been an RFI or an escalation.</li>
-        <li><strong>Language-model prices</strong> are published token rates. Llama 3.3 70B is open weight, priced here as Groq's hosted service. DeepSeek V4.1 Flash is DeepSeek's hosted API price, read 27 Nov 2026, not a self-hosted GPU bill. No language model was run on these cases, so those accuracy cells stay empty.</li>
-        <li><strong>Classical models</strong> are logistic regression, a decision tree, naive Bayes, nearest neighbours and a small neural network. They were trained to copy the rules engine, because the case files have no official labels. The rules engine is the one to use: on the 28 hand labels it scores fitness 100 with no unsafe close, it cites the evidence, and it does not vary. The nearest-neighbour model is 24 fitness points lower and has one unsafe close. Copying the engine is not an independent test of the policy.</li>
-      </ul>
+        <li>The counts above are only the list you are looking at. Model cost holds the prices and the model comparison, one section at a time.</li>
+      </ol>`)}
+      ${guide("How to read a case", `<ul>
+        <li><strong>Statement.</strong> Oldest first. Money in is a credit, deposit, top-up or funding receipt. Money out is a debit, withdrawal, card spend or payment sent. There is no running balance. A marker means the row is on an alert, or the decision cites it.</li>
+        <li><strong>Close.</strong> The activity is explained. Nothing further to do. At the payments firm the action also says whether a held payment can be released.</li>
+        <li><strong>Request information.</strong> Ask only for the document named in the action, and only when nothing already looks like a crime.</li>
+        <li><strong>Escalate to the MLRO.</strong> Do not contact the customer. Once there is suspicion, the decision is escalate, not a question. Asking would tip them off.</li>
+        <li><strong>Reason code and evidence IDs.</strong> The policy label, and the document, transaction or list entry the decision used.</li>
+      </ul>`)}
+      ${guide("Model cost, in brief", `<ul>
+        <li><strong>Fitness</strong> is how much of the cost of escalating every case the system avoids. A wrongful close costs 10.</li>
+        <li><strong>Unsafe clearance</strong> is closing a case that should have been a request or an escalation.</li>
+        <li><strong>Language-model prices</strong> are published token rates. Llama 3.3 70B is open weight, priced as Groq's hosted service. DeepSeek V4.1 Flash is DeepSeek's hosted API price, read 27 Nov 2026, not a GPU bill. No language model was run on these cases.</li>
+        <li><strong>Classical models</strong> were trained to copy the rules, because there is no official label file. The rules engine remains the one to use.</li>
+      </ul>`)}
     </section>`;
+  }
+  function actionLabel(verdict) {
+    if (verdict === "ESCALATE") return "Escalate to MLRO";
+    if (verdict === "RFI") return "Request information";
+    return "Close";
   }
   function renderCase() {
     const item = current();
@@ -96,49 +96,46 @@
           <summary><strong>${escapeHtml(doc.doc_id)}</strong> ${escapeHtml(doc.title || doc.type)}</summary>
           <pre class="muted" style="white-space:pre-wrap;padding:8px 4px;font-size:15px">${escapeHtml(doc.body || "")}</pre>
         </details>`).join("");
+    const verdict = item.decision.verdict;
     caseView.innerHTML = `
-      <div class="case-grid">
-        <div class="span-2 hero">
-          <div>
-            <h2>${escapeHtml(cust.name || "Customer")}</h2>
-            <p class="muted">${escapeHtml(item.case.case_id)} · ${escapeHtml(item.institution)} · ${escapeHtml(cust.kind || "")} · <span class="code">${escapeHtml(item.decision.reason_code)}</span></p>
-          </div>
-          <div>${pill(item.decision.verdict).replace('class="pill', 'class="pill hero-pill')}</div>
+      <section class="verdict-banner ${escapeHtml(verdict)}">
+        <div>
+          <p class="eyebrow">${escapeHtml(verdict)}</p>
+          <h2>${escapeHtml(cust.name || "Customer")}</h2>
+          <p class="muted"><span class="code">${escapeHtml(item.case.case_id)}</span> · ${escapeHtml(item.institution)} · ${escapeHtml(cust.kind || "")}</p>
+          <button type="button" class="primary" id="primary-action">${escapeHtml(actionLabel(verdict))}</button>
+          <p id="action-detail">${escapeHtml(actionLine(item))}</p>
         </div>
-        <div class="decision-row">
-          <article class="why">
-            <h3>Why</h3>
-            <p class="code">${escapeHtml(item.decision.reason_code)}</p>
-            <p>${escapeHtml(item.decision.reason)}</p>
-            <p class="footnote">Evidence ${(item.decision.evidence || []).map(id => `<a href="#doc-${escapeHtml(id)}">${escapeHtml(id)}</a>`).join(", ") || "none cited"}</p>
-          </article>
-          <article class="action ${escapeHtml(item.decision.verdict)}">
-            <h3>Next action</h3>
-            <p>${escapeHtml(actionLine(item))}</p>
-          </article>
-        </div>
-        <section class="card">
-          <h3>Alerts</h3>
-          ${(item.alerts || []).map(a => `<div class="row"><span>${escapeHtml(a.rule_id)}</span><div><strong>${escapeHtml(a.rule_name || "")}</strong><br><span class="muted">${escapeHtml(a.message || "")}</span></div></div>`).join("")}
-        </section>
-        <section class="card">
-          <h3>Profile</h3>
-          ${row("Kind", cust.kind)}
-          ${row("Declared", declared.monthly_income_gbp ? "£" + Number(declared.monthly_income_gbp).toLocaleString("en-GB") + " / month" : (declared.annual_turnover_gbp ? "£" + Number(declared.annual_turnover_gbp).toLocaleString("en-GB") + " / year" : "—"))}
-          ${row("Purpose", declared.account_purpose)}
-          ${row("Countries", (declared.expected_countries || []).join(", "))}
-          ${row("Window", (item.case.review_window || {}).from + " to " + (item.case.review_window || {}).to)}
-        </section>
-        <section class="card">
-          <h3>Documents</h3>
-          ${docs}
-        </section>
-        <section class="card span-2">
-          <h3>Statement</h3>
-          ${statementTable(item, ev)}
-          <p class="footnote" style="padding:8px 16px 12px">Oldest first. In is a credit, deposit, top-up or funding receipt. Out is a debit, withdrawal, card spend or payment sent. No running balance: the file has no opening balance. A marker means the row is on an alert or cited as evidence.</p>
-        </section>
-      </div>`;
+        <article class="why">
+          <h3>Why</h3>
+          <p class="code">${escapeHtml(item.decision.reason_code)}</p>
+          <p>${escapeHtml(item.decision.reason)}</p>
+          <p class="footnote">Evidence ${(item.decision.evidence || []).map(id => `<a href="#doc-${escapeHtml(id)}">${escapeHtml(id)}</a>`).join(", ") || "none cited"}</p>
+        </article>
+      </section>
+      <section class="card">
+        <h3>Statement</h3>
+        ${statementTable(item, ev)}
+        <p class="footnote" style="padding:8px 16px 14px">Oldest first. Money in is a credit or deposit. Money out is a debit or payment sent. No running balance. A marker means the row is on an alert or cited as evidence.</p>
+      </section>
+      <details class="fold">
+        <summary>Alerts and profile</summary>
+        <div class="row"><span>Alerts</span><div>${(item.alerts || []).map(a => `<strong>${escapeHtml(a.rule_id)}</strong> ${escapeHtml(a.rule_name || "")}. <span class="muted">${escapeHtml(a.message || "")}</span>`).join("<br>")}</div></div>
+        ${row("Kind", cust.kind)}
+        ${row("Declared", declared.monthly_income_gbp ? "£" + Number(declared.monthly_income_gbp).toLocaleString("en-GB") + " / month" : (declared.annual_turnover_gbp ? "£" + Number(declared.annual_turnover_gbp).toLocaleString("en-GB") + " / year" : "—"))}
+        ${row("Purpose", declared.account_purpose)}
+        ${row("Countries", (declared.expected_countries || []).join(", "))}
+        ${row("Window", (item.case.review_window || {}).from + " to " + (item.case.review_window || {}).to)}
+      </details>
+      <details class="fold">
+        <summary>Evidence documents</summary>
+        ${docs || `<p class="muted" style="padding:0 16px 12px">No documents on this case.</p>`}
+      </details>`;
+    const action = document.getElementById("primary-action");
+    if (action) action.addEventListener("click", () => {
+      const detail = document.getElementById("action-detail");
+      if (detail) detail.scrollIntoView({ block: "nearest" });
+    });
   }
   function row(k, v) { return `<div class="row"><span>${escapeHtml(k)}</span><div>${escapeHtml(v || "—")}</div></div>`; }
   const CHANNEL = {
@@ -213,6 +210,8 @@
         ${pill(item.decision.verdict)}
       </button></li>`).join("");
     boardView.innerHTML = `
+      <section class="hero-band">
+      <p class="eyebrow">ClearPath AML</p>
       <h2>Cases on screen</h2>
       <p class="muted">Verdict mix for the cases in the list, after search and filters. This is not an official score.</p>
       <div class="stats">
@@ -226,6 +225,7 @@
         <i class="RFI" style="width:${(counts.RFI || 0) / n * 100}%"></i>
         <i class="ESCALATE" style="width:${(counts.ESCALATE || 0) / n * 100}%"></i>
       </div>
+      </section>
       <ul class="case-picks" aria-label="Cases on screen">${picks || `<li class="muted">No cases in this filter.</li>`}</ul>
       ${overviewBlock()}`;
     boardView.querySelectorAll(".case-pick").forEach(btn => btn.addEventListener("click", () => {
@@ -236,6 +236,16 @@
       render();
       syncUrl(true);
     }));
+  }
+  function showCostPanel(name) {
+    ["llm", "ml", "risk"].forEach(id => {
+      const panel = document.getElementById("cost-panel-" + id);
+      const tab = document.getElementById("cost-tab-" + id);
+      if (!panel || !tab) return;
+      const on = id === name;
+      panel.hidden = !on;
+      tab.setAttribute("aria-selected", on ? "true" : "false");
+    });
   }
   function showView() {
     caseView.hidden = state.view !== "case";
@@ -410,6 +420,9 @@
   document.getElementById("tab-case").addEventListener("click", () => { state.view = "case"; render(); syncUrl(true); });
   document.getElementById("tab-board").addEventListener("click", () => { state.view = "board"; render(); syncUrl(true); });
   document.getElementById("tab-cost").addEventListener("click", () => { state.view = "cost"; render(); syncUrl(true); });
+  document.querySelectorAll(".cost-switch button").forEach(btn => btn.addEventListener("click", () => {
+    showCostPanel(btn.id.replace("cost-tab-", ""));
+  }));
   document.querySelectorAll("[data-theme]").forEach(btn => btn.addEventListener("click", () => {
     const theme = btn.dataset.theme;
     if (theme === "system") document.documentElement.removeAttribute("data-theme");
@@ -436,8 +449,12 @@
     render();
     syncUrl(false);
     const shot = params.get("shot");
+    if (shot === "charts" || shot === "tradeoffs") showCostPanel("llm");
+    if (shot === "ml") showCostPanel("ml");
+    if (shot === "risk") showCostPanel("risk");
     const shotNode = shot === "tradeoffs" ? document.getElementById("tradeoffs")
       : shot === "charts" ? document.getElementById("cost-chart")
+      : shot === "ml" ? document.getElementById("ml-compare")
       : shot === "overview" ? document.querySelector(".overview") : null;
     if (shotNode) shotNode.scrollIntoView({ block: "start" });
   }).catch(err => { caseView.innerHTML = `<p>Could not load the sample cases (${escapeHtml(err.message)}).</p>`; });
